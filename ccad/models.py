@@ -1,0 +1,3965 @@
+# -*- coding: utf-8 -*-
+import os, sys, uuid  # added for character like Ñ
+
+#import datetime
+from django.conf import settings
+from django.db import models
+from django.forms import ModelForm, forms, ModelChoiceField
+
+from django.utils.translation import ugettext_lazy as _
+from django.utils.timezone import *
+from django.contrib.auth.models import AbstractUser, Group
+
+from django.db.models import Count, Q, Sum # not in user - just in case to be use
+from django.db.models.signals import pre_delete, post_delete, pre_save, post_save
+
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.dispatch.dispatcher import receiver
+
+from datetime import timedelta, datetime
+
+#from ccad.models import no_work
+# Create your models here.
+
+STATUS_CHOICES  = (
+        ('NEW','NEW'),
+        ('REN','REN'),
+        ('REN/MOD','REN/MOD'),
+        ('MOD','MOD'),
+        ('STORAGE','STORAGE'),
+	    ('DUP','DUPLICATE'),
+        ('RECALL', 'RECALL'),
+        ('CANCELLED','CANCELLED')
+) 
+SIMPLIFIED_TRANSACTION_TYPE= (
+        ('ALL', 'ALL'),
+        ('TP', 'TP'),
+        ('DEMO', 'DEMO'),
+        ('PPP', 'PPP'),
+        ('NEW', 'NEW'),
+        ('REN', 'REN'),    
+        ('MOD', 'MOD'),
+        ('STO', 'STORAGE'),
+        ('DUP', 'DUPLICATE'),
+        ('REN/MOD', 'REN/MOD'),
+        ('RECALL', 'RECALL'),
+)
+SERVICE_TYPE    = (
+        ('MICROWAVE', 'MICROWAVE'),
+        ('BWA', 'BWA-WIMAX'),
+        ('WDN', 'WIRELESS DATA NETWORK'),
+        ('2G', '2G'),
+        ('3G', '3G'),
+        ('EARTH STATION', 'EARTH STATION'),
+)
+STATUS_TYPE     = (
+        (u'CHECKING REQUIREMENTS', u'CHECKING REQUIREMENTS'),       #1-CR
+        (u'ISSUANCE OF SOA', u'ISSUANCE OF SOA'),                   #2-SOA
+        (u'PAYMENT', u'PAYMENT'),                                   #3-PAYMENT
+        (u'EVALUATION', u'EVALUATION'),                             #4-EVAL
+        (u'ENDORSEMENT', u'ENDORSEMENT'),                           #5-FMD
+        (u'ENCODING', u'ENCODING'),                                 #6-ENCODE
+        (u'REVIEW', u'REVIEW'),                                     #7-REVIEW
+        (u'SIGNATURE', u'SIGNATURE'),                               #8-SIGN
+        (u'CHIEF SIGNATURE', u'CHIEF SIGNATURE'),                   #9-CHIEF SIGN
+        (u'DIRECTOR SIGNATURE', u'DIRECTOR SIGNATURE'),             #10-RB SIGN
+        (u'CASHIER STAMP', u'CASHIER STAMP'),                       #11-CASHIER STAMP
+        (u'RELEASE TO SECRETARIAT', u'RELEASE TO SECRETARIAT'),     #11-RELEASE
+        (u'TASK COMPLETED', u'TASK COMPLETED'),                     #10-COMPLETE
+        (u'PENDING', u'PENDING'),
+)
+ENGR_CHOICES=[('ENDORSEMENT','ENDORSEMENT'),('ENCODING','ENCODE'),('PENDING', 'PEND')]
+
+USAGE_TYPE = (
+    ('Main', 'MAIN EQUIPMENT'),
+    ('Protection', 'PROTECTION'),
+    )
+POWER_UNIT = (
+    ('dBm', 'dBm'),
+    ('kW', 'kW'),
+    )
+EQUIP_STATUS  = (
+        ('NEW','NEW'),
+        ('REN','REN'),
+        ('REN/MOD','REN/MOD'),
+        ('MOD','MOD'),
+        ('STORAGE','STORAGE')
+    )  
+DIRECTORS = (
+    ('Ariel Padilla', 'Ariel Padilla'),
+    ('Azor Sitchon', 'Azor Sitchon'),
+    ('Danilo Cuenca', 'Danilo Cuenca'),
+    ('Dante Vengua', 'Dante Vengua'),
+    ('Delilah Deles', 'Delilah Deles'),
+    ('Edgardo Cabarios', 'Edgardo Cabarios'),
+    ('Edgardo Celorico', 'Edgardo Celorico'),
+    ('Froilan Jamias', 'Froilan Jamias'),
+    ('Jerry Tacay', 'Jerry Tacay'),
+    ('Jesus Laureno', 'Jesus Laureno'),
+    ('Joselito Leynes', 'Joselito Leynes'),
+    ('Josue De Villa Go', 'Josue De Villa Go'),
+    ('Nestor Antonio Monroy', 'Nestor Antonio Monroy'),
+    ('Onofre Galindo', 'Onofre Galindo'),
+    ('Reynaldo Sta. Maria', 'Reynaldo Sta. Maria'),
+    ('Romeo Miguel', 'Romeo Miguel'),
+    ('Rudy Valdez', 'Rudy Valdez'),
+    ('Samuel Young', 'Samual Young'),
+    ('Teodoro Buenavista, Jr', 'Teodoro Buenavista, Jr'))
+ENCODER = (
+    ('DON', 'DON'),
+    ('REMY', 'REMY'),
+    ('EGG', 'EGG'),
+    ('CINDY', 'CINDY'),
+    ('ALEX', 'ALEX'),
+    ('DONNA', 'DONNA'),
+    ('EDMUN', 'EDMUN'))
+EVALUATOR = (
+    ('ADT', 'ADT'),
+    ('ANO', 'ANO'),
+    ('EDD', 'EDD'),
+    ('FMA', 'FMA'),
+    ('VMM', 'VMM'),
+    ('SOP', 'SOP'))
+CARRIER_LIST = (
+    ('OCEANIC WIRELESS NETWORK, INC.',  'OCEANIC WIRELESS NETWORK, INC.'),
+    ('DIGITEL MOBILE PHILIPPINES, INC.',  'DIGITEL MOBILE PHILIPPINES, INC.'),
+    ('BAYAN TELECOMMUNICATIONS, INC.',  'BAYAN TELECOMMUNICATIONS, INC.'),
+    ('BELL TELECOMMUNICATION PHILIPPINES, INC.',    'BELL TELECOMMUNICATION PHILIPPINES, INC.'),
+    ('CONNECTIVITY UNLIMITED RESOURCE ENTERPRISE, INC.',    'CONNECTIVITY UNLIMITED RESOURCE ENTERPRISE, INC.'),
+    ('EASTERN TELECOMMUNICATIONS PHILS., INC.', 'EASTERN TELECOMMUNICATIONS PHILS., INC.'),
+    ('EXPRESS TELECOMMUNICATION CO., INC.', 'EXPRESS TELECOMMUNICATION CO., INC.'),
+    ('GLOBE TELECOM, INC.', 'GLOBE TELECOM, INC.'),
+    ('INNOVE COMMUNICATIONS, INC. (FORMERLY ISLACOM)',  'INNOVE COMMUNICATIONS, INC. (FORMERLY ISLACOM)'),
+    ('LIBERTY BROADCASTING NETWORK, INC.',  'LIBERTY BROADCASTING NETWORK, INC.'),
+    ('MARBEL TELEPHONE SYSTEM, INC.',   'MARBEL TELEPHONE SYSTEM, INC.'),
+    ('MULTIMEDIA TELEPHONY, INC.',  'MULTIMEDIA TELEPHONY, INC.'),
+    ('PACIFIC WIRELESS, INC.',  'PACIFIC WIRELESS, INC.'),
+    ('PHILIPPINE GLOBAL COMMUNICATIONS, INC.',  'PHILIPPINE GLOBAL COMMUNICATIONS, INC.'),
+    ('PHILIPPINE LONG DISTANCE TELEPHONE COMPANY',  'PHILIPPINE LONG DISTANCE TELEPHONE COMPANY'),
+    ('PRIMEWORLD DIGITAL SYSTEM, INC.', 'PRIMEWORLD DIGITAL SYSTEM, INC.'),
+    ('SMART BROADBAND, INC.',   'SMART BROADBAND, INC.'),
+    ('SMART COMMUNICATIONS, INC.',  'SMART COMMUNICATIONS, INC.'),
+    ('SOLID BROADBAND CORPORATION', 'SOLID BROADBAND CORPORATION'),
+    ('TAXINET INC.',    'TAXINET INC.'),
+    ('AZ COMMUNICATIONS NETWORK, INC.', 'AZ COMMUNICATIONS NETWORK, INC.'),
+    ('CONTEL COMMUNICATIONS, INC.', 'CONTEL COMMUNICATIONS, INC.'),
+    ('CORONA INTERNATIONAL, INC.',  'CORONA INTERNATIONAL, INC.'),
+    ('DATELCOM CORPORATION',    'DATELCOM CORPORATION'),
+    ('PHILIPPINE TELEGRAPH  CORP.', 'PHILIPPINE TELEGRAPH  CORP.'),
+    ('RADIO MARINE NETWORK, INC.',  'RADIO MARINE NETWORK, INC.'),
+    ('REPUBLIC RADIO COMMUNICATION SYSTEM', 'REPUBLIC RADIO COMMUNICATION SYSTEM'),
+    ('SMARTMATIC-TIM CORP.',    'SMARTMATIC-TIM CORP.'),
+    ('TEXTRON CORPORATION', 'TEXTRON CORPORATION'),
+    ('UNIVERSAL TELECOM SERVICE, INC.', 'UNIVERSAL TELECOM SERVICE, INC.'),
+    ('DIGITAL TELECOMMUNICATIONS PHILIPPINES, INC.',    'DIGITAL TELECOMMUNICATIONS PHILIPPINES, INC.'),
+    ('SEAR TELECOMMUNICATIONS, INC.',   'SEAR TELECOMMUNICATIONS, INC.'),
+    ('TELECOMMUNICATIONS OFFICE, DOTC', 'TELECOMMUNICATIONS OFFICE, DOTC'),
+    ('WI-TRIBE TELECOMS, INC. (formerly LBNI)', 'WI-TRIBE TELECOMS, INC. (formerly LBNI)'),
+    ('TEODORO N. ROMASANTA, INC. (TNRI TELECOMS)',  'TEODORO N. ROMASANTA, INC. (TNRI TELECOMS)'),
+    ('EASYCALL COMMUNICATIONS PHILIPPINES INC.',    'EASYCALL COMMUNICATIONS PHILIPPINES INC.'),
+    ('ETELCO INC.', 'ETELCO INC.'),
+    ('FIBER TELECOMMUNICATIONS, INC.',  'FIBER TELECOMMUNICATIONS, INC.'),
+    ('HI-FREQUENCY TELECOMMUNICATIONS, INC.',   'HI-FREQUENCY TELECOMMUNICATIONS, INC.'),
+    ('NEW CENTURY TELECOMMUNICATIONS, INC.',    'NEW CENTURY TELECOMMUNICATIONS, INC.'),
+    ('PANAY TELECOMMUNICATIONS, INC.',  'PANAY TELECOMMUNICATIONS, INC.'),
+    ('PHILCOM CORPORATION', 'PHILCOM CORPORATION'),
+    ('RADIO COMMUNICATIONS OF THE PHILIPPINES, INC.',   'RADIO COMMUNICATIONS OF THE PHILIPPINES, INC.'),
+    ('ISLACOM', 'ISLACOM'),
+    ('PHILIPPINE COMMUNICATIONS SATELLITE CORP.',   'PHILIPPINE COMMUNICATIONS SATELLITE CORP.'),
+    ('NEXT MOBILE, INC. (Formerly NEXTEL COMMS.)',  'NEXT MOBILE, INC. (Formerly NEXTEL COMMS.)'),
+    ('TELECOMS INFRASTRUCTURE CORP. OF THE PHILS.', 'TELECOMS INFRASTRUCTURE CORP. OF THE PHILS.'),
+    ('SANTOS TELEPHONE CORPORATION',    'SANTOS TELEPHONE CORPORATION'),
+    ('METRO KIDAPAWAN TELEPHONE COMPANY',   'METRO KIDAPAWAN TELEPHONE COMPANY'),
+    ('Broadband Everywhere Corp. (Formerly Textron Corp.)', 'Broadband Everywhere Corp. (Formerly Textron Corp.)'),
+    ('MERIDIAN TELEKOM, INC.',  'MERIDIAN TELEKOM, INC.'),
+    ('PMO-DOTC (Telepono sa Barangay - Zamboanga del Norte)',   'PMO-DOTC (Telepono sa Barangay - Zamboanga del Norte)'),
+    ('BICOL TELEPHONE AND TELEGRAPH, INC.', 'BICOL TELEPHONE AND TELEGRAPH, INC.'),
+    ('CICT-PMO (Telepono sa Barangay - Lanao del Norte)',   'CICT-PMO (Telepono sa Barangay - Lanao del Norte)'),
+    ('WESTERN BATANGAS TELEPHONE SYSTEM, INC.', 'WESTERN BATANGAS TELEPHONE SYSTEM, INC.'),
+    ('WORLDWIDE COMMUNICATIONS, INC.',  'WORLDWIDE COMMUNICATIONS, INC.'),
+    ('CICT-PMO (Telepono Sa Barangay - Quezon)',    'CICT-PMO (Telepono Sa Barangay - Quezon)'),
+    ('CICT-PMO (Telepono sa Barangay - Misamis Occidental)',    'CICT-PMO (Telepono sa Barangay - Misamis Occidental)'),
+    ('CICT-PMO',    'CICT-PMO'),
+    ('PILIPINO TELEPHONE CORPORATION',  'PILIPINO TELEPHONE CORPORATION'),
+    ('LM UNITED TELEPHONE COMPANY, INC.',   'LM UNITED TELEPHONE COMPANY, INC.'),
+    ('CALAPAN TELEPHONE SYSTEM, INC.',  'CALAPAN TELEPHONE SYSTEM, INC.'),
+    ('PANAY TELEPHONE CORPORATION (PANTELCO)',  'PANAY TELEPHONE CORPORATION (PANTELCO)'),
+    ('ANGELES CITY TELEPHONE SYSTEM',   'ANGELES CITY TELEPHONE SYSTEM'),
+    ('TELECOMMUNICATIONS TECHNOLOGY PHILS., INC.',  'TELECOMMUNICATIONS TECHNOLOGY PHILS., INC.'),
+    ('CAPITOL WIRELESS, INC.',  'CAPITOL WIRELESS, INC.'),
+    ('ENHANCED ELECTRONICS & COMMUNICATION SERVICE, INC.',  'ENHANCED ELECTRONICS & COMMUNICATION SERVICE, INC.'),
+    ('HARRIS STRATEX  NETWORKS PHILIPPINES',    'HARRIS STRATEX  NETWORKS PHILIPPINES'),
+    ('SKYTEL PHILIPPINES, INC.',    'SKYTEL PHILIPPINES, INC.)'))
+REGION_CODE = (
+    ('ARMM', 'ARMM'),
+    ('CAR', 'CAR'),
+    ('NCR', 'NCR'),
+    ('I', 'I'),
+    ('II', 'II'),
+    ('III', 'III'),
+    ('IV-A', 'IV-A'),
+    ('IV-B', 'IV-B'),        
+    ('V', 'V'),
+    ('VI', 'VI'),
+    ('VII', 'VII'),
+    ('VIII', 'VIII'),
+    ('IX', 'IX'),
+    ('X', 'X'),
+    ('XI', 'XI'),
+    ('XII', 'XII'),
+    ('XIII', 'XIII'))
+PROVINCE_LIST = (
+    ('ABRA', 'ABRA'),
+    ('AGUSAN DEL NORTE', 'AGUSAN DEL NORTE'),
+    ('AGUSAN DEL SUR', 'AGUSAN DEL SUR'),
+    ('AKLAN', 'AKLAN'),
+    ('ALBAY', 'ALBAY'),
+    ('ANTIQUE', 'ANTIQUE'),
+    ('APAYAO', 'APAYAO'),
+    ('AURORA', 'AURORA'),
+    ('BASILAN', 'BASILAN'),
+    ('BATAAN', 'BATAAN'),
+    ('BATANES', 'BATANES'),
+    ('BATANGAS', 'BATANGAS'),
+    ('BENGUET', 'BENGUET'),
+    ('BILIRAN', 'BILIRAN'),
+    ('BOHOL', 'BOHOL'),
+    ('BUKIDNON', 'BUKIDNON'),
+    ('BULACAN', 'BULACAN'),
+    ('CAGAYAN', 'CAGAYAN'),
+    ('CAMARINES NORTE', 'CAMARINES NORTE'),
+    ('CAMARINES SUR', 'CAMARINES SUR'),
+    ('CAMIGUIN', 'CAMIGUIN'),
+    ('CAPIZ', 'CAPIZ'),
+    ('CATANDUANES', 'CATANDUANES'),
+    ('CAVITE', 'CAVITE'),
+    ('CEBU', 'CEBU'),
+    ('COMPOSTELA VALLEY', 'COMPOSTELA VALLEY'),
+    ('COTABATO', 'COTABATO'),
+    ('DAVAO ORIENTAL', 'DAVAO ORIENTAL'),
+    ('DAVAO DEL NORTE', 'DAVAO DEL NORTE'),
+    ('DAVAO DEL SUR', 'DAVAO DEL SUR'),
+    ('DINAGAT ISLANDS', 'DINAGAT ISLANDS'),
+    ('EASTERN SAMAR', 'EASTERN SAMAR'),
+    ('GUIMARAS', 'GUIMARAS'),
+    ('IFUGAO', 'IFUGAO'),
+    ('ILOCOS NORTE', 'ILOCOS NORTE'),
+    ('ILOCOS SUR', 'ILOCOS SUR'),
+    ('ILOILO', 'ILOILO'),
+    ('ISABELA', 'ISABELA'),
+    ('KALINGA', 'KALINGA'),
+    ('LA UNION', 'LA UNION'),
+    ('LAGUNA', 'LAGUNA'),
+    ('LANAO DEL NORTE', 'LANAO DEL NORTE'),
+    ('LANAO DEL SUR', 'LANAO DEL SUR'),
+    ('LEYTE', 'LEYTE'),
+    ('MAGUINDANAO', 'MAGUINDANAO'),
+    ('MARINDUQUE', 'MARINDUQUE'),
+    ('MASBATE', 'MASBATE'),
+    ('METRO MANILA', 'METRO MANILA'),
+    ('MISAMIS OCCIDENTAL', 'MISAMIS OCCIDENTAL'),
+    ('MISAMIS ORIENTAL', 'MISAMIS ORIENTAL'),
+    ('MOUNTAIN PROVINCE', 'MOUNTAIN PROVINCE'),
+    ('NEGROS OCCIDENTAL', 'NEGROS OCCIDENTAL'),
+    ('NEGROS ORIENTAL', 'NEGROS ORIENTAL'),
+    ('NORTHERN SAMAR', 'NORTHERN SAMAR'),
+    ('NUEVA ECIJA', 'NUEVA ECIJA'),
+    ('NUEVA VIZCAYA', 'NUEVA VIZCAYA'),
+    ('OCCIDENTAL MINDORO', 'OCCIDENTAL MINDORO'),
+    ('ORIENTAL MINDORO', 'ORIENTAL MINDORO'),
+    ('PALAWAN', 'PALAWAN'),
+    ('PAMPANGA', 'PAMPANGA'),
+    ('PANGASINAN', 'PANGASINAN'),
+    ('QUEZON', 'QUEZON'),
+    ('QUIRINO', 'QUIRINO'),
+    ('RIZAL', 'RIZAL'),
+    ('ROMBLON', 'ROMBLON'),
+    ('SAMAR', 'SAMAR'),
+    ('SARANGANI', 'SARANGANI'),
+    ('SIQUIJOR', 'SIQUIJOR'),
+    ('SORSOGON', 'SORSOGON'),
+    ('SOUTH COTABATO', 'SOUTH COTABATO'),
+    ('SOUTHERN LEYTE', 'SOUTHERN LEYTE'),
+    ('SULTAN KUDARAT', 'SULTAN KUDARAT'),
+    ('SULU', 'SULU'),
+    ('SURIGAO DEL NORTE', 'SURIGAO DEL NORTE'),
+    ('SURIGAO DEL SUR', 'SURIGAO DEL SUR'),
+    ('TARLAC', 'TARLAC'),
+    ('TAWI-TAWI', 'TAWI-TAWI'),
+    ('ZAMBALES', 'ZAMBALES'),
+    ('ZAMBOANGA SIBUGAY', 'ZAMBOANGA SIBUGAY'),
+    ('ZAMBOANGA DEL NORTE', 'ZAMBOANGA DEL NORTE'),
+    ('ZAMBOANGA DEL SUR', 'ZAMBOANGA DEL SUR'))
+CITY_LIST = (
+    ('ABORLAN', 'ABORLAN'),
+    ('ABRA DE ILOG', 'ABRA DE ILOG'),
+    ('ABUCAY', 'ABUCAY'),
+    ('ABULUG', 'ABULUG'),
+    ('ABUYOG', 'ABUYOG'),
+    ('ADAMS', 'ADAMS'),
+    ('AGDANGAN', 'AGDANGAN'),
+    ('AGLIPAY', 'AGLIPAY'),
+    ('AGNO', 'AGNO'),
+    ('AGONCILLO', 'AGONCILLO'),
+    ('AGOO', 'AGOO'),
+    ('AGUILAR', 'AGUILAR'),
+    ('AGUINALDO', 'AGUINALDO'),
+    ('AGUTAYA', 'AGUTAYA'),
+    ('AJUY', 'AJUY'),
+    ('AKBAR', 'AKBAR'),
+    ('AL-BARKA', 'AL-BARKA'),
+    ('ALABAT', 'ALABAT'),
+    ('ALABEL', 'ALABEL'),
+    ('ALAMADA', 'ALAMADA'),
+    ('ALAMINOS', 'ALAMINOS'),
+    ('ALAMINOS CITY', 'ALAMINOS CITY'),
+    ('ALANGALANG', 'ALANGALANG'),
+    ('ALBUERA', 'ALBUERA'),
+    ('ALBURQUERQUE', 'ALBURQUERQUE'),
+    ('ALCALA', 'ALCALA'),
+    ('ALCANTARA', 'ALCANTARA'),
+    ('ALCOY', 'ALCOY'),
+    ('ALEGRIA', 'ALEGRIA'),
+    ('ALEOSAN', 'ALEOSAN'),
+    ('ALFONSO', 'ALFONSO'),
+    ('ALFONSO CASTAÑEDA', 'ALFONSO CASTAÑEDA'),
+    ('ALFONSO LISTA', 'ALFONSO LISTA'),
+    ('ALIAGA', 'ALIAGA'),
+    ('ALICIA', 'ALICIA'),
+    ('ALILEM', 'ALILEM'),
+    ('ALIMODIAN', 'ALIMODIAN'),
+    ('ALITAGTAG', 'ALITAGTAG'),
+    ('ALLACAPAN', 'ALLACAPAN'),
+    ('ALLEN', 'ALLEN'),
+    ('ALMAGRO', 'ALMAGRO'),
+    ('ALMERIA', 'ALMERIA'),
+    ('ALOGUINSAN', 'ALOGUINSAN'),
+    ('ALORAN', 'ALORAN'),
+    ('ALTAVAS', 'ALTAVAS'),
+    ('ALUBIJID', 'ALUBIJID'),
+    ('AMADEO', 'AMADEO'),
+    ('AMBAGUIO', 'AMBAGUIO'),
+    ('AMLAN', 'AMLAN'),
+    ('AMPATUAN', 'AMPATUAN'),
+    ('AMULUNG', 'AMULUNG'),
+    ('ANAHAWAN', 'ANAHAWAN'),
+    ('ANAO', 'ANAO'),
+    ('ANDA', 'ANDA'),
+    ('ANGADANAN', 'ANGADANAN'),
+    ('ANGAT', 'ANGAT'),
+    ('ANGELES CITY', 'ANGELES CITY'),
+    ('ANGONO', 'ANGONO'),
+    ('ANILAO', 'ANILAO'),
+    ('ANINI-Y', 'ANINI-Y'),
+    ('ANTEQUERA', 'ANTEQUERA'),
+    ('ANTIPAS', 'ANTIPAS'),
+    ('ANTIPOLO CITY', 'ANTIPOLO CITY'),
+    ('APALIT', 'APALIT'),
+    ('APARRI', 'APARRI'),
+    ('ARACELI', 'ARACELI'),
+    ('ARAKAN', 'ARAKAN'),
+    ('ARAYAT', 'ARAYAT'),
+    ('ARGAO', 'ARGAO'),
+    ('ARINGAY', 'ARINGAY'),
+    ('ARITAO', 'ARITAO'),
+    ('AROROY', 'AROROY'),
+    ('ARTECHE', 'ARTECHE'),
+    ('ASINGAN', 'ASINGAN'),
+    ('ASIPULO', 'ASIPULO'),
+    ('ASTURIAS', 'ASTURIAS'),
+    ('ASUNCION', 'ASUNCION'),
+    ('ATIMONAN', 'ATIMONAN'),
+    ('ATOK', 'ATOK'),
+    ('AURORA', 'AURORA'),
+    ('AYUNGON', 'AYUNGON'),
+    ('BAAO', 'BAAO'),
+    ('BABATNGON', 'BABATNGON'),
+    ('BACACAY', 'BACACAY'),
+    ('BACARRA', 'BACARRA'),
+    ('BACLAYON', 'BACLAYON'),
+    ('BACNOTAN', 'BACNOTAN'),
+    ('BACO', 'BACO'),
+    ('BACOLOD', 'BACOLOD'),
+    ('BACOLOD CITY ', 'BACOLOD CITY '),
+    ('BACOLOD-KALAWI', 'BACOLOD-KALAWI'),
+    ('BACOLOR', 'BACOLOR'),
+    ('BACONG', 'BACONG'),
+    ('BACOOR', 'BACOOR'),
+    ('BACUAG', 'BACUAG'),
+    ('BADIAN', 'BADIAN'),
+    ('BADIANGAN', 'BADIANGAN'),
+    ('BADOC', 'BADOC'),
+    ('BAGABAG', 'BAGABAG'),
+    ('BAGAC', 'BAGAC'),
+    ('BAGAMANOC', 'BAGAMANOC'),
+    ('BAGANGA', 'BAGANGA'),
+    ('BAGGAO', 'BAGGAO'),
+    ('BAGO CITY', 'BAGO CITY'),
+    ('BAGUIO CITY', 'BAGUIO CITY'),
+    ('BAGULIN', 'BAGULIN'),
+    ('BAGUMBAYAN', 'BAGUMBAYAN'),
+    ('BAIS CITY', 'BAIS CITY'),
+    ('BAKUN', 'BAKUN'),
+    ('BALABAC', 'BALABAC'),
+    ('BALABAGAN', 'BALABAGAN'),
+    ('BALAGTAS', 'BALAGTAS'),
+    ('BALAMBAN', 'BALAMBAN'),
+    ('BALANGA', 'BALANGA'),
+    ('BALANGIGA', 'BALANGIGA'),
+    ('BALANGKAYAN', 'BALANGKAYAN'),
+    ('BALAOAN', 'BALAOAN'),
+    ('BALASAN', 'BALASAN'),
+    ('BALATAN', 'BALATAN'),
+    ('BALAYAN', 'BALAYAN'),
+    ('BALBALAN', 'BALBALAN'),
+    ('BALENO', 'BALENO'),
+    ('BALER', 'BALER'),
+    ('BALETE', 'BALETE'),
+    ('BALIANGAO', 'BALIANGAO'),
+    ('BALIGUIAN', 'BALIGUIAN'),
+    ('BALILIHAN', 'BALILIHAN'),
+    ('BALINDONG', 'BALINDONG'),
+    ('BALINGASAG', 'BALINGASAG'),
+    ('BALINGOAN', 'BALINGOAN'),
+    ('BALIUAG', 'BALIUAG'),
+    ('BALLESTEROS', 'BALLESTEROS'),
+    ('BALOI', 'BALOI'),
+    ('BALUD', 'BALUD'),
+    ('BALUNGAO', 'BALUNGAO'),
+    ('BAMBAN', 'BAMBAN'),
+    ('BAMBANG', 'BAMBANG'),
+    ('BANATE', 'BANATE'),
+    ('BANAUE', 'BANAUE'),
+    ('BANAYBANAY', 'BANAYBANAY'),
+    ('BANAYOYO', 'BANAYOYO'),
+    ('BANGA', 'BANGA'),
+    ('BANGAR', 'BANGAR'),
+    ('BANGUED', 'BANGUED'),
+    ('BANGUI', 'BANGUI'),
+    ('BANGUINGUI (TONGKIL)', 'BANGUINGUI (TONGKIL)'),
+    ('BANI', 'BANI'),
+    ('BANISILAN', 'BANISILAN'),
+    ('BANNA', 'BANNA'),
+    ('BANSALAN', 'BANSALAN'),
+    ('BANSUD', 'BANSUD'),
+    ('BANTAY', 'BANTAY'),
+    ('BANTAYAN', 'BANTAYAN'),
+    ('BANTON', 'BANTON'),
+    ('BARAS', 'BARAS'),
+    ('BARBAZA', 'BARBAZA'),
+    ('BARCELONA', 'BARCELONA'),
+    ('BARILI', 'BARILI'),
+    ('BARLIG', 'BARLIG'),
+    ('BAROBO', 'BAROBO'),
+    ('BAROTAC NUEVO', 'BAROTAC NUEVO'),
+    ('BAROTAC VIEJO', 'BAROTAC VIEJO'),
+    ('BAROY', 'BAROY'),
+    ('BARUGO', 'BARUGO'),
+    ('BASAY', 'BASAY'),
+    ('BASCO', 'BASCO'),
+    ('BASEY', 'BASEY'),
+    ('BASILISA', 'BASILISA'),
+    ('BASISTA', 'BASISTA'),
+    ('BASUD', 'BASUD'),
+    ('BATAC CITY', 'BATAC CITY'),
+    ('BATAD', 'BATAD'),
+    ('BATAN', 'BATAN'),
+    ('BATANGAS CITY', 'BATANGAS CITY'),
+    ('BATARAZA', 'BATARAZA'),
+    ('BATO', 'BATO'),
+    ('BATUAN', 'BATUAN'),
+    ('BAUAN', 'BAUAN'),
+    ('BAUANG', 'BAUANG'),
+    ('BAUKO', 'BAUKO'),
+    ('BAUNGON ', 'BAUNGON'),
+    ('BAUTISTA', 'BAUTISTA'),
+    ('BAY', 'BAY'),
+    ('BAYABAS', 'BAYABAS'),
+    ('BAYAMBANG', 'BAYAMBANG'),
+    ('BAYANG', 'BAYANG'),
+    ('BAYAWAN CITY', 'BAYAWAN CITY'),
+    ('BAYBAY CITY', 'BAYBAY CITY'),
+    ('BAYOG', 'BAYOG'),
+    ('BAYOMBONG', 'BAYOMBONG'),
+    ('BELISON', 'BELISON'),
+    ('BENITO SOLIVEN', 'BENITO SOLIVEN'),
+    ('BESAO', 'BESAO'),
+    ('BIEN UNIDO', 'BIEN UNIDO'),
+    ('BILAR', 'BILAR'),
+    ('BILIRAN', 'BILIRAN'),
+    ('BINALBAGAN', 'BINALBAGAN'),
+    ('BINALONAN', 'BINALONAN'),
+    ('BINANGONAN', 'BINANGONAN'),
+    ('BINDOY', 'BINDOY'),
+    ('BINGAWAN', 'BINGAWAN'),
+    ('BINIDAYAN', 'BINIDAYAN'),
+    ('BINMALEY', 'BINMALEY'),
+    ('BINUANGAN', 'BINUANGAN'),
+    ('BIRI', 'BIRI'),
+    ('BISLIG CITY', 'BISLIG CITY'),
+    ('BIÑAN CITY', 'BIÑAN CITY'),
+    ('BOAC', 'BOAC'),
+    ('BOBON', 'BOBON'),
+    ('BOCAUE', 'BOCAUE'),
+    ('BOGO CITY', 'BOGO CITY'),
+    ('BOKOD', 'BOKOD'),
+    ('BOLINAO', 'BOLINAO'),
+    ('BOLINEY', 'BOLINEY'),
+    ('BOLJOON', 'BOLJOON'),
+    ('BOMBON', 'BOMBON'),
+    ('BONGABON', 'BONGABON'),
+    ('BONGABONG', 'BONGABONG'),
+    ('BONGAO', 'BONGAO'),
+    ('BONIFACIO', 'BONIFACIO'),
+    ('BONTOC', 'BONTOC'),
+    ('BORBON', 'BORBON'),
+    ('BORONGAN CITY', 'BORONGAN CITY'),
+    ('BOSTON', 'BOSTON'),
+    ('BOTOLAN', 'BOTOLAN'),
+    ('BRAULIO E. DUJALI', 'BRAULIO E. DUJALI'),
+    ("BROOKE'S POINT", "BROOKE'S POINT"),
+    ('BUADIPOSO-BUNTONG', 'BUADIPOSO-BUNTONG'),
+    ('BUBONG', 'BUBONG'),
+    ('BUCAY', 'BUCAY'),
+    ('BUCLOC', 'BUCLOC'),
+    ('BUENAVISTA', 'BUENAVISTA'),
+    ('BUGALLON', 'BUGALLON'),
+    ('BUGASONG', 'BUGASONG'),
+    ('BUGUEY', 'BUGUEY'),
+    ('BUGUIAS', 'BUGUIAS'),
+    ('BUHI', 'BUHI'),
+    ('BULA', 'BULA'),
+    ('BULAKAN', 'BULAKAN'),
+    ('BULALACAO', 'BULALACAO'),
+    ('BULAN', 'BULAN'),
+    ('BULUAN', 'BULUAN'),
+    ('BULUSAN', 'BULUSAN'),
+    ('BUMBARAN', 'BUMBARAN'),
+    ('BUNAWAN', 'BUNAWAN'),
+    ('BURAUEN', 'BURAUEN'),
+    ('BURDEOS', 'BURDEOS'),
+    ('BURGOS', 'BURGOS'),
+    ('BURUANGA', 'BURUANGA'),
+    ('BUSTOS', 'BUSTOS'),
+    ('BUSUANGA', 'BUSUANGA'),
+    ('BUTIG', 'BUTIG'),
+    ('BUTUAN CITY', 'BUTUAN CITY'),
+    ('BUUG', 'BUUG'),
+    ('CABA', 'CABA'),
+    ('CABAGAN', 'CABAGAN'),
+    ('CABANATUAN CITY', 'CABANATUAN CITY'),
+    ('CABANGAN', 'CABANGAN'),
+    ('CABANGLASAN', 'CABANGLASAN'),
+    ('CABARROGUIS', 'CABARROGUIS'),
+    ('CABATUAN', 'CABATUAN'),
+    ('CABIAO', 'CABIAO'),
+    ('CABUCGAYAN', 'CABUCGAYAN'),
+    ('CABUGAO', 'CABUGAO'),
+    ('CABUSAO', 'CABUSAO'),
+    ('CABUYAO', 'CABUYAO'),
+    ('CADIZ CITY', 'CADIZ CITY'),
+    ('CAGAYAN DE ORO CITY', 'CAGAYAN DE ORO CITY'),
+    ('CAGAYANCILLO', 'CAGAYANCILLO'),
+    ('CAGDIANAO', 'CAGDIANAO'),
+    ('CAGWAIT', 'CAGWAIT'),
+    ('CAIBIRAN', 'CAIBIRAN'),
+    ('CAINTA', 'CAINTA'),
+    ('CAJIDIOCAN', 'CAJIDIOCAN'),
+    ('CALABANGA', 'CALABANGA'),
+    ('CALACA', 'CALACA'),
+    ('CALAMBA', 'CALAMBA'),
+    ('CALAMBA CITY', 'CALAMBA CITY'),
+    ('CALANASAN', 'CALANASAN'),
+    ('CALANOGAS', 'CALANOGAS'),
+    ('CALAPAN CITY', 'CALAPAN CITY'),
+    ('CALAPE', 'CALAPE'),
+    ('CALASIAO', 'CALASIAO'),
+    ('CALATAGAN', 'CALATAGAN'),
+    ('CALATRAVA', 'CALATRAVA'),
+    ('CALAUAG', 'CALAUAG'),
+    ('CALAUAN', 'CALAUAN'),
+    ('CALAYAN', 'CALAYAN'),
+    ('CALBIGA', 'CALBIGA'),
+    ('CALINOG', 'CALINOG'),
+    ('CALINTAAN', 'CALINTAAN'),
+    ('CALOOCAN CITY', 'CALOOCAN CITY'),
+    ('CALUBIAN', 'CALUBIAN'),
+    ('CALUMPIT', 'CALUMPIT'),
+    ('CALUYA', 'CALUYA'),
+    ('CAMALANIUGAN', 'CAMALANIUGAN'),
+    ('CAMALIG', 'CAMALIG'),
+    ('CAMALIGAN', 'CAMALIGAN'),
+    ('CAMILING', 'CAMILING'),
+    ('CAN-AVID', 'CAN-AVID'),
+    ('CANAMAN', 'CANAMAN'),
+    ('CANDABA', 'CANDABA'),
+    ('CANDELARIA', 'CANDELARIA'),
+    ('CANDIJAY', 'CANDIJAY'),
+    ('CANDON CITY', 'CANDON CITY'),
+    ('CANDONI', 'CANDONI'),
+    ('CANLAON CITY', 'CANLAON CITY'),
+    ('CANTILAN', 'CANTILAN'),
+    ('CAOAYAN', 'CAOAYAN'),
+    ('CAPALONGA', 'CAPALONGA'),
+    ('CAPAS', 'CAPAS'),
+    ('CAPOOCAN', 'CAPOOCAN'),
+    ('CAPUL', 'CAPUL'),
+    ('CARAGA', 'CARAGA'),
+    ('CARAMOAN', 'CARAMOAN'),
+    ('CARAMORAN', 'CARAMORAN'),
+    ('CARASI', 'CARASI'),
+    ('CARCAR CITY', 'CARCAR CITY'),
+    ('CARDONA', 'CARDONA'),
+    ('CARIGARA', 'CARIGARA'),
+    ('CARLES', 'CARLES'),
+    ('CARMEN', 'CARMEN'),
+    ('CARMONA', 'CARMONA'),
+    ('CARRANGLAN', 'CARRANGLAN'),
+    ('CARRASCAL', 'CARRASCAL'),
+    ('CASIGURAN', 'CASIGURAN'),
+    ('CASTILLA', 'CASTILLA'),
+    ('CASTILLEJOS', 'CASTILLEJOS'),
+    ('CATAINGAN', 'CATAINGAN'),
+    ('CATANAUAN', 'CATANAUAN'),
+    ('CATARMAN', 'CATARMAN'),
+    ('CATEEL', 'CATEEL'),
+    ('CATIGBIAN', 'CATIGBIAN'),
+    ('CATMON', 'CATMON'),
+    ('CATUBIG', 'CATUBIG'),
+    ('CAUAYAN', 'CAUAYAN'),
+    ('CAUAYAN CITY', 'CAUAYAN CITY'),
+    ('CAVINTI', 'CAVINTI'),
+    ('CAVITE CITY', 'CAVITE CITY'),
+    ('CAWAYAN', 'CAWAYAN'),
+    ('CEBU CITY', 'CEBU CITY'),
+    ('CERVANTES', 'CERVANTES'),
+    ('CLARIN', 'CLARIN'),
+    ('CLAVER', 'CLAVER'),
+    ('CLAVERIA', 'CLAVERIA'),
+    ('COLUMBIO', 'COLUMBIO'),
+    ('COMPOSTELA', 'COMPOSTELA'),
+    ('CONCEPCION', 'CONCEPCION'),
+    ('CONNER', 'CONNER'),
+    ('CONSOLACION', 'CONSOLACION'),
+    ('CORCUERA', 'CORCUERA'),
+    ('CORDON', 'CORDON'),
+    ('CORDOVA', 'CORDOVA'),
+    ('CORELLA', 'CORELLA'),
+    ('CORON', 'CORON'),
+    ('CORTES', 'CORTES'),
+    ('COTABATO CITY', 'COTABATO CITY'),
+    ('CUARTERO', 'CUARTERO'),
+    ('CUENCA', 'CUENCA'),
+    ('CULABA', 'CULABA'),
+    ('CULASI', 'CULASI'),
+    ('CULION', 'CULION'),
+    ('CURRIMAO', 'CURRIMAO'),
+    ('CUYAPO', 'CUYAPO'),
+    ('CUYO', 'CUYO'),
+    ('DAANBANTAYAN', 'DAANBANTAYAN'),
+    ('DAET', 'DAET'),
+    ('DAGAMI', 'DAGAMI'),
+    ('DAGOHOY', 'DAGOHOY'),
+    ('DAGUIOMAN', 'DAGUIOMAN'),
+    ('DAGUPAN CITY', 'DAGUPAN CITY'),
+    ('DALAGUETE', 'DALAGUETE'),
+    ('DAMULOG ', 'DAMULOG'),
+    ('DANAO', 'DANAO'),
+    ('DANAO CITY', 'DANAO CITY'),
+    ('DANGCAGAN', 'DANGCAGAN'),
+    ('DANGLAS', 'DANGLAS'),
+    ('DAO', 'DAO'),
+    ('DAPA', 'DAPA'),
+    ('DAPITAN CITY', 'DAPITAN CITY'),
+    ('DARAGA', 'DARAGA'),
+    ('DARAM', 'DARAM'),
+    ('DASMARIÑAS CITY', 'DASMARIÑAS CITY'),
+    ('DASOL', 'DASOL'),
+    ('DATU ABDULLAH SANGKI', 'DATU ABDULLAH SANGKI'),
+    ('DATU ANGGAL MIDTIMBANG', 'DATU ANGGAL MIDTIMBANG'),
+    ('DATU HOFFER AMPATUAN', 'DATU HOFFER AMPATUAN'),
+    ('DATU PAGLAS', 'DATU PAGLAS'),
+    ('DATU PIANG', 'DATU PIANG'),
+    ('DATU SALIBO', 'DATU SALIBO'),
+    ('DATU SAUDI-AMPATUAN', 'DATU SAUDI-AMPATUAN'),
+    ('DATU UNSAY', 'DATU UNSAY'),
+    ('DAUIN', 'DAUIN'),
+    ('DAUIS', 'DAUIS'),
+    ('DAVAO CITY', 'DAVAO CITY'),
+    ('DEL CARMEN', 'DEL CARMEN'),
+    ('DEL GALLEGO', 'DEL GALLEGO'),
+    ('DELFIN ALBANO (MAGSAYSAY)', 'DELFIN ALBANO (MAGSAYSAY)'),
+    ('DIADI', 'DIADI'),
+    ('DIFFUN', 'DIFFUN'),
+    ('DIGOS CITY', 'DIGOS CITY'),
+    ('DILASAG', 'DILASAG'),
+    ('DIMASALANG', 'DIMASALANG'),
+    ('DIMATALING', 'DIMATALING'),
+    ('DIMIAO', 'DIMIAO'),
+    ('DINAGAT', 'DINAGAT'),
+    ('DINALUNGAN', 'DINALUNGAN'),
+    ('DINALUPIHAN', 'DINALUPIHAN'),
+    ('DINAPIGUE', 'DINAPIGUE'),
+    ('DINAS', 'DINAS'),
+    ('DINGALAN', 'DINGALAN'),
+    ('DINGLE', 'DINGLE'),
+    ('DINGRAS', 'DINGRAS'),
+    ('DIPACULAO', 'DIPACULAO'),
+    ('DIPLAHAN', 'DIPLAHAN'),
+    ('DIPOLOG CITY', 'DIPOLOG CITY'),
+    ('DITSAAN-RAMAIN', 'DITSAAN-RAMAIN'),
+    ('DIVILICAN', 'DIVILICAN'),
+    ('DOLORES', 'DOLORES'),
+    ('DON CARLOS', 'DON CARLOS'),
+    ('DON MARCELINO', 'DON MARCELINO'),
+    ('DON VICTORIANO CHIONGBIAN (DON MARIANO MARCOS)', 'DON VICTORIANO CHIONGBIAN (DON MARIANO MARCOS)'),
+    ('DONSOL', 'DONSOL'),
+    ('DOÑA REMEDIOS TRINIDAD', 'DOÑA REMEDIOS TRINIDAD'),
+    ('DUERO', 'DUERO'),
+    ('DUEÑAS', 'DUEÑAS'),
+    ('DULAG', 'DULAG'),
+    ('DUMAGUETE CITY', 'DUMAGUETE CITY'),
+    ('DUMALAG', 'DUMALAG'),
+    ('DUMALINAO', 'DUMALINAO'),
+    ('DUMALNEG', 'DUMALNEG'),
+    ('DUMANGAS', 'DUMANGAS'),
+    ('DUMANJUG', 'DUMANJUG'),
+    ('DUMARAN', 'DUMARAN'),
+    ('DUMARAO', 'DUMARAO'),
+    ('DUMINGAG', 'DUMINGAG'),
+    ('DUPAX DEL NORTE', 'DUPAX DEL NORTE'),
+    ('DUPAX DEL SUR', 'DUPAX DEL SUR'),
+    ('ECHAGUE', 'ECHAGUE'),
+    ('EL NIDO (BACUIT)', 'EL NIDO (BACUIT)'),
+    ('EL SALVADOR CITY', 'EL SALVADOR CITY'),
+    ('ENRILE', 'ENRILE'),
+    ('ENRIQUE B. MAGALONA', 'ENRIQUE B. MAGALONA'),
+    ('ENRIQUE VILLANUEVA', 'ENRIQUE VILLANUEVA'),
+    ('ESCALANTE CITY', 'ESCALANTE CITY'),
+    ('ESPERANZA', 'ESPERANZA'),
+    ('ESTANCIA', 'ESTANCIA'),
+    ('FAMY', 'FAMY'),
+    ('FERROL', 'FERROL'),
+    ('FLORA', 'FLORA'),
+    ('FLORIDABLANCA', 'FLORIDABLANCA'),
+    ('GABALDON', 'GABALDON'),
+    ('GAINZA', 'GAINZA'),
+    ('GALIMUYOD', 'GALIMUYOD'),
+    ('GAMAY', 'GAMAY'),
+    ('GAMU', 'GAMU'),
+    ('GANASSI', 'GANASSI'),
+    ('GANDARA', 'GANDARA'),
+    ('GAPAN CITY', 'GAPAN CITY'),
+    ('GARCHITORENA', 'GARCHITORENA'),
+    ('GARCIA HERNANDEZ', 'GARCIA HERNANDEZ'),
+    ('GASAN', 'GASAN'),
+    ('GATTARAN', 'GATTARAN'),
+    ('GEN. S. K. PENDATUN', 'GEN. S. K. PENDATUN'),
+    ('GENERAL EMILIO AGUINALDO', 'GENERAL EMILIO AGUINALDO'),
+    ('GENERAL LUNA', 'GENERAL LUNA'),
+    ('GENERAL MACARTHUR', 'GENERAL MACARTHUR'),
+    ('GENERAL MAMERTO NATIVIDAD', 'GENERAL MAMERTO NATIVIDAD'),
+    ('GENERAL MARIANO ALVAREZ', 'GENERAL MARIANO ALVAREZ'),
+    ('GENERAL NAKAR', 'GENERAL NAKAR'),
+    ('GENERAL SANTOS CITY', 'GENERAL SANTOS CITY'),
+    ('GENERAL TINIO', 'GENERAL TINIO'),
+    ('GENERAL TRIAS', 'GENERAL TRIAS'),
+    ('GERONA', 'GERONA'),
+    ('GETAFE', 'GETAFE'),
+    ('GIGAQUIT', 'GIGAQUIT'),
+    ('GIGMOTO', 'GIGMOTO'),
+    ('GINATILAN', 'GINATILAN'),
+    ('GINGOOG CITY', 'GINGOOG CITY'),
+    ('GIPORLOS', 'GIPORLOS'),
+    ('GITAGUM', 'GITAGUM'),
+    ('GLAN', 'GLAN'),
+    ('GLORIA', 'GLORIA'),
+    ('GOA', 'GOA'),
+    ('GODOD (17)', 'GODOD (17)'),
+    ('GONZAGA', 'GONZAGA'),
+    ('GOVERNOR GENEROSO', 'GOVERNOR GENEROSO'),
+    ('GREGORIO DEL PILAR (CONCEPCION)', 'GREGORIO DEL PILAR (CONCEPCION)'),
+    ('GUAGUA', 'GUAGUA'),
+    ('GUBAT', 'GUBAT'),
+    ('GUIGUINTO', 'GUIGUINTO'),
+    ('GUIHULNGAN CITY', 'GUIHULNGAN CITY'),
+    ('GUIMBA', 'GUIMBA'),
+    ('GUIMBAL', 'GUIMBAL'),
+    ('GUINAYANGAN', 'GUINAYANGAN'),
+    ('GUINDULMAN', 'GUINDULMAN'),
+    ('GUINDULUNGAN', 'GUINDULUNGAN'),
+    ('GUINOBATAN', 'GUINOBATAN'),
+    ('GUINSILIBAN', 'GUINSILIBAN'),
+    ('GUIPOS', 'GUIPOS'),
+    ('GUIUAN', 'GUIUAN'),
+    ('GUMACA', 'GUMACA'),
+    ('GUTALAC', 'GUTALAC'),
+    ('HADJI MOHAMMAD AJUL', 'HADJI MOHAMMAD AJUL'),
+    ('HADJI MUHTAMAD', 'HADJI MUHTAMAD'),
+    ('HADJI PANGLIMA TAHIL (MARUNGGAS)', 'HADJI PANGLIMA TAHIL (MARUNGGAS)'),
+    ('HAGONOY', 'HAGONOY'),
+    ('HAMTIC', 'HAMTIC'),
+    ('HERMOSA', 'HERMOSA'),
+    ('HERNANI', 'HERNANI'),
+    ('HILONGOS', 'HILONGOS'),
+    ('HIMAMAYLAN CITY', 'HIMAMAYLAN CITY'),
+    ('HINABANGAN', 'HINABANGAN'),
+    ('HINATUAN', 'HINATUAN'),
+    ('HINDANG', 'HINDANG'),
+    ('HINGYON', 'HINGYON'),
+    ('HINIGARAN', 'HINIGARAN'),
+    ('HINOBA-AN', 'HINOBA-AN'),
+    ('HINUNANGAN', 'HINUNANGAN'),
+    ('HINUNDAYAN', 'HINUNDAYAN'),
+    ('HUNGDUAN', 'HUNGDUAN'),
+    ('IBA', 'IBA'),
+    ('IBAAN', 'IBAAN'),
+    ('IBAJAY', 'IBAJAY'),
+    ('IGBARAS', 'IGBARAS'),
+    ('IGUIG', 'IGUIG'),
+    ('ILAGAN', 'ILAGAN'),
+    ('ILIGAN CITY', 'ILIGAN CITY'),
+    ('ILOG', 'ILOG'),
+    ('ILOILO CITY', 'ILOILO CITY'),
+    ('IMELDA', 'IMELDA'),
+    ('IMPASUG-ONG  ', 'IMPASUG-ONG '),
+    ('IMUS', 'IMUS'),
+    ('INABANGA', 'INABANGA'),
+    ('INDANAN', 'INDANAN'),
+    ('INDANG', 'INDANG'),
+    ('INFANTA', 'INFANTA'),
+    ('INITAO', 'INITAO'),
+    ('INOPACAN', 'INOPACAN'),
+    ('IPIL', 'IPIL'),
+    ('IRIGA CITY', 'IRIGA CITY'),
+    ('IROSIN', 'IROSIN'),
+    ('ISABEL', 'ISABEL'),
+    ('ISABELA', 'ISABELA'),
+    ('ISABELA CITY', 'ISABELA CITY'),
+    ('ISLAND GARDEN CITY OF SAMAL', 'ISLAND GARDEN CITY OF SAMAL'),
+    ('ISULAN', 'ISULAN'),
+    ('ITBAYAT', 'ITBAYAT'),
+    ('ITOGON', 'ITOGON'),
+    ('IVANA', 'IVANA'),
+    ('IVISAN', 'IVISAN'),
+    ('JABONGA', 'JABONGA'),
+    ('JAGNA', 'JAGNA'),
+    ('JALAJALA', 'JALAJALA'),
+    ('JAMINDAN', 'JAMINDAN'),
+    ('JANIUAY', 'JANIUAY'),
+    ('JARO', 'JARO'),
+    ('JASAAN', 'JASAAN'),
+    ('JAVIER', 'JAVIER'),
+    ('JAÉN', 'JAÉN'),
+    ('JIABONG', 'JIABONG'),
+    ('JIMALALUD', 'JIMALALUD'),
+    ('JIMENEZ', 'JIMENEZ'),
+    ('JIPAPAD', 'JIPAPAD'),
+    ('JOLO', 'JOLO'),
+    ('JOMALIG', 'JOMALIG'),
+    ('JONES', 'JONES'),
+    ('JORDAN', 'JORDAN'),
+    ('JOSE ABAD SANTOS (TRINIDAD)', 'JOSE ABAD SANTOS (TRINIDAD)'),
+    ('JOSE DALMAN (PONOT)', 'JOSE DALMAN (PONOT)'),
+    ('JOSE PANGANIBAN', 'JOSE PANGANIBAN'),
+    ('JOSEFINA', 'JOSEFINA'),
+    ('JOVELLAR', 'JOVELLAR'),
+    ('JUBAN', 'JUBAN'),
+    ('JULITA', 'JULITA'),
+    ('KABACAN', 'KABACAN'),
+    ('KABANKALAN CITY', 'KABANKALAN CITY'),
+    ('KABASALAN', 'KABASALAN'),
+    ('KABAYAN', 'KABAYAN'),
+    ('KABUGAO', 'KABUGAO'),
+    ('KADINGILAN   ', 'KADINGILAN  '),
+    ('KALAMANSIG', 'KALAMANSIG'),
+    ('KALAWIT', 'KALAWIT'),
+    ('KALAYAAN', 'KALAYAAN'),
+    ('KALAYAAN (SPRATLY ISLANDS)', 'KALAYAAN (SPRATLY ISLANDS)'),
+    ('KALIBO', 'KALIBO'),
+    ('KALILANGAN   ', 'KALILANGAN  '),
+    ('KALINGALAN CALUANG', 'KALINGALAN CALUANG'),
+    ('KANANGA', 'KANANGA'),
+    ('KAPAI', 'KAPAI'),
+    ('KAPALONG', 'KAPALONG'),
+    ('KAPANGAN', 'KAPANGAN'),
+    ('KAPATAGAN', 'KAPATAGAN'),
+    ('KASIBU', 'KASIBU'),
+    ('KATIPUNAN', 'KATIPUNAN'),
+    ('KAUSWAGAN', 'KAUSWAGAN'),
+    ('KAWAYAN', 'KAWAYAN'),
+    ('KAWIT', 'KAWIT'),
+    ('KAYAPA', 'KAYAPA'),
+    ('KIAMBA', 'KIAMBA'),
+    ('KIANGAN', 'KIANGAN'),
+    ('KIBAWE   ', 'KIBAWE  '),
+    ('KIBLAWAN', 'KIBLAWAN'),
+    ('KIBUNGAN', 'KIBUNGAN'),
+    ('KIDAPAWAN CITY', 'KIDAPAWAN CITY'),
+    ('KINOGUITAN', 'KINOGUITAN'),
+    ('KITAOTAO ', 'KITAOTAO    '),
+    ('KITCHARAO', 'KITCHARAO'),
+    ('KOLAMBUGAN', 'KOLAMBUGAN'),
+    ('KORONADAL CITY', 'KORONADAL CITY'),
+    ('KUMALARANG', 'KUMALARANG'),
+    ('LA CARLOTA CITY', 'LA CARLOTA CITY'),
+    ('LA CASTELLANA', 'LA CASTELLANA'),
+    ('LA LIBERTAD', 'LA LIBERTAD'),
+    ('LA PAZ', 'LA PAZ'),
+    ('LA TRINIDAD', 'LA TRINIDAD'),
+    ('LAAK', 'LAAK'),
+    ('LABANGAN', 'LABANGAN'),
+    ('LABASON', 'LABASON'),
+    ('LABO', 'LABO'),
+    ('LABRADOR', 'LABRADOR'),
+    ('LACUB', 'LACUB'),
+    ('LAGANGILANG', 'LAGANGILANG'),
+    ('LAGAWE', 'LAGAWE'),
+    ('LAGAYAN', 'LAGAYAN'),
+    ('LAGONGLONG', 'LAGONGLONG'),
+    ('LAGONOY', 'LAGONOY'),
+    ('LAGUINDINGAN', 'LAGUINDINGAN'),
+    ('LAKE SEBU', 'LAKE SEBU'),
+    ('LAKEWOOD', 'LAKEWOOD'),
+    ('LAL-LO', 'LAL-LO'),
+    ('LALA', 'LALA'),
+    ('LAMBAYONG', 'LAMBAYONG'),
+    ('LAMBUNAO', 'LAMBUNAO'),
+    ('LAMITAN', 'LAMITAN'),
+    ('LAMUT', 'LAMUT'),
+    ('LANGIDEN', 'LANGIDEN'),
+    ('LANGUYAN', 'LANGUYAN'),
+    ('LANTAPAN ', 'LANTAPAN    '),
+    ('LANTAWAN', 'LANTAWAN'),
+    ('LANUZA', 'LANUZA'),
+    ('LAOAC', 'LAOAC'),
+    ('LAOAG CITY', 'LAOAG CITY'),
+    ('LAOANG', 'LAOANG'),
+    ('LAPINIG', 'LAPINIG'),
+    ('LAPU-LAPU CITY', 'LAPU-LAPU CITY'),
+    ('LAPUYAN', 'LAPUYAN'),
+    ('LARENA', 'LARENA'),
+    ('LAS NAVAS', 'LAS NAVAS'),
+    ('LAS NIEVES', 'LAS NIEVES'),
+    ('LAS PIÑAS CITY', 'LAS PIÑAS CITY'),
+    ('LASAM', 'LASAM'),
+    ('LAUA-AN', 'LAUA-AN'),
+    ('LAUR', 'LAUR'),
+    ('LAUREL', 'LAUREL'),
+    ('LAVEZARES', 'LAVEZARES'),
+    ('LAWAAN', 'LAWAAN'),
+    ('LAZI', 'LAZI'),
+    ('LEBAK', 'LEBAK'),
+    ('LEGANES', 'LEGANES'),
+    ('LEGAZPI CITY', 'LEGAZPI CITY'),
+    ('LEMERY', 'LEMERY'),
+    ('LEON', 'LEON'),
+    ('LEON B. POSTIGO (BACUNGAN)', 'LEON B. POSTIGO (BACUNGAN)'),
+    ('LEYTE', 'LEYTE'),
+    ('LEZO', 'LEZO'),
+    ('LIAN', 'LIAN'),
+    ('LIANGA', 'LIANGA'),
+    ('LIBACAO', 'LIBACAO'),
+    ('LIBAGON', 'LIBAGON'),
+    ('LIBERTAD', 'LIBERTAD'),
+    ('LIBJO', 'LIBJO'),
+    ('LIBMANAN', 'LIBMANAN'),
+    ('LIBON', 'LIBON'),
+    ('LIBONA   ', 'LIBONA  '),
+    ('LIBUNGAN', 'LIBUNGAN'),
+    ('LICAB', 'LICAB'),
+    ('LICUAN-BAAY', 'LICUAN-BAAY'),
+    ('LIDLIDDA', 'LIDLIDDA'),
+    ('LIGAO CITY', 'LIGAO CITY'),
+    ('LILA', 'LILA'),
+    ('LILIW', 'LILIW'),
+    ('LILOAN', 'LILOAN'),
+    ('LILOY', 'LILOY'),
+    ('LIMASAWA', 'LIMASAWA'),
+    ('LIMAY', 'LIMAY'),
+    ('LINAMON', 'LINAMON'),
+    ('LINAPACAN', 'LINAPACAN'),
+    ('LINGAYEN', 'LINGAYEN'),
+    ('LINGIG', 'LINGIG'),
+    ('LIPA CITY', 'LIPA CITY'),
+    ('LLANERA', 'LLANERA'),
+    ('LLORENTE', 'LLORENTE'),
+    ('LOAY', 'LOAY'),
+    ('LOBO', 'LOBO'),
+    ('LOBOC', 'LOBOC'),
+    ('LOOC', 'LOOC'),
+    ('LOON', 'LOON'),
+    ('LOPE DE VEGA', 'LOPE DE VEGA'),
+    ('LOPEZ', 'LOPEZ'),
+    ('LOPEZ JAENA', 'LOPEZ JAENA'),
+    ('LORETO', 'LORETO'),
+    ('LOS BAÑOS', 'LOS BAÑOS'),
+    ('LUBA', 'LUBA'),
+    ('LUBANG', 'LUBANG'),
+    ('LUBAO', 'LUBAO'),
+    ('LUBUAGAN', 'LUBUAGAN'),
+    ('LUCBAN', 'LUCBAN'),
+    ('LUCENA CITY', 'LUCENA CITY'),
+    ('LUGAIT', 'LUGAIT'),
+    ('LUGUS', 'LUGUS'),
+    ('LUISIANA', 'LUISIANA'),
+    ('LUMBA-BAYABAO', 'LUMBA-BAYABAO'),
+    ('LUMBACA-UNAYAN', 'LUMBACA-UNAYAN'),
+    ('LUMBAN', 'LUMBAN'),
+    ('LUMBATAN', 'LUMBATAN'),
+    ('LUMBAYANAGUE', 'LUMBAYANAGUE'),
+    ('LUNA', 'LUNA'),
+    ('LUPAO', 'LUPAO'),
+    ('LUPI', 'LUPI'),
+    ('LUPON', 'LUPON'),
+    ('LUTAYAN', 'LUTAYAN'),
+    ('LUUK', 'LUUK'),
+    ("M'LANG", "M'LANG"),
+    ('MA-AYON', 'MA-AYON'),
+    ('MAASIM', 'MAASIM'),
+    ('MAASIN', 'MAASIN'),
+    ('MAASIN CITY', 'MAASIN CITY'),
+    ('MABALACAT', 'MABALACAT'),
+    ('MABINAY', 'MABINAY'),
+    ('MABINI', 'MABINI'),
+    ('MABITAC', 'MABITAC'),
+    ('MABUHAY', 'MABUHAY'),
+    ('MACARTHUR', 'MACARTHUR'),
+    ('MACABEBE', 'MACABEBE'),
+    ('MACALELON', 'MACALELON'),
+    ('MACO', 'MACO'),
+    ('MACONACON', 'MACONACON'),
+    ('MACROHON', 'MACROHON'),
+    ('MADALAG', 'MADALAG'),
+    ('MADALUM', 'MADALUM'),
+    ('MADAMBA', 'MADAMBA'),
+    ('MADDELA', 'MADDELA'),
+    ('MADRID', 'MADRID'),
+    ('MADRIDEJOS', 'MADRIDEJOS'),
+    ('MAGALANG', 'MAGALANG'),
+    ('MAGALLANES', 'MAGALLANES'),
+    ('MAGARAO', 'MAGARAO'),
+    ('MAGDALENA', 'MAGDALENA'),
+    ('MAGDIWANG', 'MAGDIWANG'),
+    ('MAGPET', 'MAGPET'),
+    ('MAGSAYSAY', 'MAGSAYSAY'),
+    ('MAGSINGAL', 'MAGSINGAL'),
+    ('MAGUING', 'MAGUING'),
+    ('MAHAPLAG', 'MAHAPLAG'),
+    ('MAHATAO', 'MAHATAO'),
+    ('MAHAYAG', 'MAHAYAG'),
+    ('MAHINOG', 'MAHINOG'),
+    ('MAIGO', 'MAIGO'),
+    ('MAIMBUNG', 'MAIMBUNG'),
+    ('MAINIT', 'MAINIT'),
+    ('MAITUM', 'MAITUM'),
+    ('MAJAYJAY', 'MAJAYJAY'),
+    ('MAKATI CITY', 'MAKATI CITY'),
+    ('MAKATO', 'MAKATO'),
+    ('MAKILALA', 'MAKILALA'),
+    ('MALABANG', 'MALABANG'),
+    ('MALABON CITY', 'MALABON CITY'),
+    ('MALABUYOC', 'MALABUYOC'),
+    ('MALALAG', 'MALALAG'),
+    ('MALANGAS', 'MALANGAS'),
+    ('MALAPATAN', 'MALAPATAN'),
+    ('MALASIQUI', 'MALASIQUI'),
+    ('MALAY', 'MALAY'),
+    ('MALAYBALAY CITY  ', 'MALAYBALAY CITY '),
+    ('MALIBCONG', 'MALIBCONG'),
+    ('MALILIPOT', 'MALILIPOT'),
+    ('MALIMONO', 'MALIMONO'),
+    ('MALINAO', 'MALINAO'),
+    ('MALITA', 'MALITA'),
+    ('MALITBOG', 'MALITBOG'),
+    ('MALITBOG ', 'MALITBOG    '),
+    ('MALLIG', 'MALLIG'),
+    ('MALOLOS CITY', 'MALOLOS CITY'),
+    ('MALUNGON', 'MALUNGON'),
+    ('MALUSO', 'MALUSO'),
+    ('MALVAR', 'MALVAR'),
+    ('MAMASAPANO', 'MAMASAPANO'),
+    ('MAMBAJAO', 'MAMBAJAO'),
+    ('MAMBURAO', 'MAMBURAO'),
+    ('MAMBUSAO', 'MAMBUSAO'),
+    ('MANABO', 'MANABO'),
+    ('MANAOAG', 'MANAOAG'),
+    ('MANAPLA', 'MANAPLA'),
+    ('MANAY', 'MANAY'),
+    ('MANDALUYONG CITY', 'MANDALUYONG CITY'),
+    ('MANDAON', 'MANDAON'),
+    ('MANDAUE CITY', 'MANDAUE CITY'),
+    ('MANGALDAN', 'MANGALDAN'),
+    ('MANGATAREM', 'MANGATAREM'),
+    ('MANGUDADATU', 'MANGUDADATU'),
+    ('MANILA', 'MANILA'),
+    ('MANITO', 'MANITO'),
+    ('MANJUYOD', 'MANJUYOD'),
+    ('MANKAYAN', 'MANKAYAN'),
+    ('MANOLO FORTICH   ', 'MANOLO FORTICH  '),
+    ('MANSALAY', 'MANSALAY'),
+    ('MANTICAO', 'MANTICAO'),
+    ('MANUKAN', 'MANUKAN'),
+    ('MAPANAS', 'MAPANAS'),
+    ('MAPANDAN', 'MAPANDAN'),
+    ('MAPUN', 'MAPUN'),
+    ('MARABUT', 'MARABUT'),
+    ('MARAGONDON', 'MARAGONDON'),
+    ('MARAGUSAN', 'MARAGUSAN'),
+    ('MARAMAG  ', 'MARAMAG '),
+    ('MARANTAO', 'MARANTAO'),
+    ('MARAWI CITY', 'MARAWI CITY'),
+    ('MARCOS', 'MARCOS'),
+    ('MARGOSATUBIG', 'MARGOSATUBIG'),
+    ('MARIA', 'MARIA'),
+    ('MARIA AURORA', 'MARIA AURORA'),
+    ('MARIBOJOC', 'MARIBOJOC'),
+    ('MARIHATAG', 'MARIHATAG'),
+    ('MARIKINA CITY', 'MARIKINA CITY'),
+    ('MARILAO', 'MARILAO'),
+    ('MARIPIPI', 'MARIPIPI'),
+    ('MARIVELES', 'MARIVELES'),
+    ('MAROGONG', 'MAROGONG'),
+    ('MASANTOL', 'MASANTOL'),
+    ('MASBATE CITY', 'MASBATE CITY'),
+    ('MASINLOC', 'MASINLOC'),
+    ('MASIU', 'MASIU'),
+    ('MASLOG', 'MASLOG'),
+    ('MATAAS NA KAHOY', 'MATAAS NA KAHOY'),
+    ('MATAG-OB', 'MATAG-OB'),
+    ('MATALAM', 'MATALAM'),
+    ('MATALOM', 'MATALOM'),
+    ('MATANAO', 'MATANAO'),
+    ('MATI', 'MATI'),
+    ('MATI CITY', 'MATI CITY'),
+    ('MATNOG', 'MATNOG'),
+    ('MATUGUINAO', 'MATUGUINAO'),
+    ('MATUNGAO', 'MATUNGAO'),
+    ('MAUBAN', 'MAUBAN'),
+    ('MAWAB', 'MAWAB'),
+    ('MAYANTOC', 'MAYANTOC'),
+    ('MAYDOLONG', 'MAYDOLONG'),
+    ('MAYORGA', 'MAYORGA'),
+    ('MAYOYAO', 'MAYOYAO'),
+    ('MEDELLIN', 'MEDELLIN'),
+    ('MEDINA', 'MEDINA'),
+    ('MENDEZ', 'MENDEZ'),
+    ('MERCEDES', 'MERCEDES'),
+    ('MERIDA', 'MERIDA'),
+    ('MEXICO', 'MEXICO'),
+    ('MEYCAUAYAN CITY', 'MEYCAUAYAN CITY'),
+    ('MIAGAO', 'MIAGAO'),
+    ('MIDSALIP', 'MIDSALIP'),
+    ('MIDSAYAP', 'MIDSAYAP'),
+    ('MILAGROS', 'MILAGROS'),
+    ('MILAOR', 'MILAOR'),
+    ('MINA', 'MINA'),
+    ('MINALABAC', 'MINALABAC'),
+    ('MINALIN', 'MINALIN'),
+    ('MINGLANILLA', 'MINGLANILLA'),
+    ('MOALBOAL', 'MOALBOAL'),
+    ('MOBO', 'MOBO'),
+    ('MOGPOG', 'MOGPOG'),
+    ('MOISES PADILLA', 'MOISES PADILLA'),
+    ('MOLAVE', 'MOLAVE'),
+    ('MONCADA', 'MONCADA'),
+    ('MONDRAGON', 'MONDRAGON'),
+    ('MONKAYO', 'MONKAYO'),
+    ('MONREAL', 'MONREAL'),
+    ('MONTEVISTA', 'MONTEVISTA'),
+    ('MORONG', 'MORONG'),
+    ('MOTIONG', 'MOTIONG'),
+    ('MULANAY', 'MULANAY'),
+    ('MULONDO', 'MULONDO'),
+    ('MUNAI', 'MUNAI'),
+    ('MUNTINLUPA CITY', 'MUNTINLUPA CITY'),
+    ('MURCIA', 'MURCIA'),
+    ('MUTIA', 'MUTIA'),
+    ('NAAWAN', 'NAAWAN'),
+    ('NABAS', 'NABAS'),
+    ('NABUA', 'NABUA'),
+    ('NABUNTURAN', 'NABUNTURAN'),
+    ('NAGA', 'NAGA'),
+    ('NAGA CITY', 'NAGA CITY'),
+    ('NAGBUKEL', 'NAGBUKEL'),
+    ('NAGCARLAN', 'NAGCARLAN'),
+    ('NAGTIPUNAN', 'NAGTIPUNAN'),
+    ('NAGUILIAN', 'NAGUILIAN'),
+    ('NAIC', 'NAIC'),
+    ('NAMPICUAN', 'NAMPICUAN'),
+    ('NARRA', 'NARRA'),
+    ('NARVACAN', 'NARVACAN'),
+    ('NASIPIT', 'NASIPIT'),
+    ('NASUGBU', 'NASUGBU'),
+    ('NATIVIDAD', 'NATIVIDAD'),
+    ('NATONIN', 'NATONIN'),
+    ('NAUJAN', 'NAUJAN'),
+    ('NAVAL', 'NAVAL'),
+    ('NAVOTAS CITY', 'NAVOTAS CITY'),
+    ('NEW BATAAN', 'NEW BATAAN'),
+    ('NEW CORELLA', 'NEW CORELLA'),
+    ('NEW LUCENA', 'NEW LUCENA'),
+    ('NEW WASHINGTON', 'NEW WASHINGTON'),
+    ('NORALA', 'NORALA'),
+    ('NORZAGARAY', 'NORZAGARAY'),
+    ('NOVELETA', 'NOVELETA'),
+    ('NUEVA ERA', 'NUEVA ERA'),
+    ('NUEVA VALENCIA', 'NUEVA VALENCIA'),
+    ('NUMANCIA', 'NUMANCIA'),
+    ('NUNUNGAN', 'NUNUNGAN'),
+    ('OAS', 'OAS'),
+    ('OBANDO', 'OBANDO'),
+    ('OCAMPO', 'OCAMPO'),
+    ('ODIONGAN', 'ODIONGAN'),
+    ('OLD PANAMAO', 'OLD PANAMAO'),
+    ('OLONGAPO CITY', 'OLONGAPO CITY'),
+    ('OLUTANGA', 'OLUTANGA'),
+    ('OMAR', 'OMAR'),
+    ('OPOL', 'OPOL'),
+    ('ORANI', 'ORANI'),
+    ('ORAS', 'ORAS'),
+    ('ORION', 'ORION'),
+    ('ORMOC CITY', 'ORMOC CITY'),
+    ('OROQUIETA CITY', 'OROQUIETA CITY'),
+    ('OSLOB', 'OSLOB'),
+    ('OTON', 'OTON'),
+    ('OZAMIZ CITY', 'OZAMIZ CITY'),
+    ('PADADA', 'PADADA'),
+    ('PADRE BURGOS', 'PADRE BURGOS'),
+    ('PADRE GARCIA', 'PADRE GARCIA'),
+    ('PAETE', 'PAETE'),
+    ('PAGADIAN CITY', 'PAGADIAN CITY'),
+    ('PAGAGAWAN', 'PAGAGAWAN'),
+    ('PAGALUNGAN', 'PAGALUNGAN'),
+    ('PAGAYAWAN', 'PAGAYAWAN'),
+    ('PAGBILAO', 'PAGBILAO'),
+    ('PAGLAT', 'PAGLAT'),
+    ('PAGSANGHAN', 'PAGSANGHAN'),
+    ('PAGSANJAN', 'PAGSANJAN'),
+    ('PAGUDPUD', 'PAGUDPUD'),
+    ('PAKIL', 'PAKIL'),
+    ('PALANAN', 'PALANAN'),
+    ('PALANAS', 'PALANAS'),
+    ('PALAPAG', 'PALAPAG'),
+    ('PALAUIG', 'PALAUIG'),
+    ('PALAYAN CITY', 'PALAYAN CITY'),
+    ('PALIMBANG', 'PALIMBANG'),
+    ('PALO', 'PALO'),
+    ('PALOMPON', 'PALOMPON'),
+    ('PALUAN', 'PALUAN'),
+    ('PAMBUJAN', 'PAMBUJAN'),
+    ('PAMPLONA', 'PAMPLONA'),
+    ('PANABO CITY', 'PANABO CITY'),
+    ('PANAON', 'PANAON'),
+    ('PANAY', 'PANAY'),
+    ('PANDAG', 'PANDAG'),
+    ('PANDAMI', 'PANDAMI'),
+    ('PANDAN', 'PANDAN'),
+    ('PANDI', 'PANDI'),
+    ('PANGANIBAN', 'PANGANIBAN'),
+    ('PANGANTUCAN  ', 'PANGANTUCAN '),
+    ('PANGIL', 'PANGIL'),
+    ('PANGLAO', 'PANGLAO'),
+    ('PANGLIMA ESTINO (NEW PANAMAO)', 'PANGLIMA ESTINO (NEW PANAMAO)'),
+    ('PANGLIMA SUGALA', 'PANGLIMA SUGALA'),
+    ('PANGUTARAN', 'PANGUTARAN'),
+    ('PANIQUI', 'PANIQUI'),
+    ('PANITAN', 'PANITAN'),
+    ('PANTABANGAN', 'PANTABANGAN'),
+    ('PANTAO RAGAT', 'PANTAO RAGAT'),
+    ('PANTAR', 'PANTAR'),
+    ('PANTUKAN', 'PANTUKAN'),
+    ('PANUKULAN', 'PANUKULAN'),
+    ('PAOAY', 'PAOAY'),
+    ('PAOMBONG', 'PAOMBONG'),
+    ('PARACALE', 'PARACALE'),
+    ('PARACELIS', 'PARACELIS'),
+    ('PARANAS (WRIGHT)', 'PARANAS (WRIGHT)'),
+    ('PARANG', 'PARANG'),
+    ('PARAÑAQUE CITY', 'PARAÑAQUE CITY'),
+    ('PASACAO', 'PASACAO'),
+    ('PASAY CITY', 'PASAY CITY'),
+    ('PASIG CITY', 'PASIG CITY'),
+    ('PASIL', 'PASIL'),
+    ('PASTRANA', 'PASTRANA'),
+    ('PASUQUIN', 'PASUQUIN'),
+    ('PATA', 'PATA'),
+    ('PATEROS', 'PATEROS'),
+    ('PATIKUL', 'PATIKUL'),
+    ('PATNANUNGAN', 'PATNANUNGAN'),
+    ('PATNONGON', 'PATNONGON'),
+    ('PAVIA', 'PAVIA'),
+    ('PAYAO', 'PAYAO'),
+    ('PEREZ', 'PEREZ'),
+    ('PEÑABLANCA', 'PEÑABLANCA'),
+    ('PEÑARANDA', 'PEÑARANDA'),
+    ('PEÑARRUBIA', 'PEÑARRUBIA'),
+    ('PIAGAPO', 'PIAGAPO'),
+    ('PIAT', 'PIAT'),
+    ('PICONG', 'PICONG'),
+    ('PIDDIG', 'PIDDIG'),
+    ('PIDIGAN', 'PIDIGAN'),
+    ('PIGKAWAYAN', 'PIGKAWAYAN'),
+    ('PIKIT', 'PIKIT'),
+    ('PILA', 'PILA'),
+    ('PILAR', 'PILAR'),
+    ('PILI', 'PILI'),
+    ('PILILLA', 'PILILLA'),
+    ('PINABACDAO', 'PINABACDAO'),
+    ('PINAMALAYAN', 'PINAMALAYAN'),
+    ('PINAMUNGAHAN', 'PINAMUNGAHAN'),
+    ('PINILI', 'PINILI'),
+    ('PINTUYAN', 'PINTUYAN'),
+    ('PINUKPUK', 'PINUKPUK'),
+    ('PIO DURAN', 'PIO DURAN'),
+    ('PIO V. CORPUZ', 'PIO V. CORPUZ'),
+    ('PITOGO', 'PITOGO'),
+    ('PIÑAN (NEW PIÑAN)', 'PIÑAN (NEW PIÑAN)'),
+    ('PLACER', 'PLACER'),
+    ('PLARIDEL', 'PLARIDEL'),
+    ('POLA', 'POLA'),
+    ('POLANCO', 'POLANCO'),
+    ('POLANGUI', 'POLANGUI'),
+    ('POLILLO', 'POLILLO'),
+    ('POLOMOLOK', 'POLOMOLOK'),
+    ('PONTEVEDRA', 'PONTEVEDRA'),
+    ('POONA BAYABAO', 'POONA BAYABAO'),
+    ('POONA PIAGAPO', 'POONA PIAGAPO'),
+    ('PORAC', 'PORAC'),
+    ('PORO', 'PORO'),
+    ('POTOTAN', 'POTOTAN'),
+    ('POZORRUBIO', 'POZORRUBIO'),
+    ('PRES. CARLOS P. GARCIA', 'PRES. CARLOS P. GARCIA'),
+    ('PRES. MANUEL A. ROXAS', 'PRES. MANUEL A. ROXAS'),
+    ('PRESENTACION', 'PRESENTACION'),
+    ('PRESIDENT QUIRINO', 'PRESIDENT QUIRINO'),
+    ('PRESIDENT ROXAS', 'PRESIDENT ROXAS'),
+    ('PRIETO DIAZ', 'PRIETO DIAZ'),
+    ('PROSPERIDAD', 'PROSPERIDAD'),
+    ('PUALAS', 'PUALAS'),
+    ('PUDTOL', 'PUDTOL'),
+    ('PUERTO GALERA', 'PUERTO GALERA'),
+    ('PUERTO PRINCESA', 'PUERTO PRINCESA'),
+    ('PUERTO PRINCESA CITY', 'PUERTO PRINCESA CITY'),
+    ('PUGO', 'PUGO'),
+    ('PULILAN', 'PULILAN'),
+    ('PULUPANDAN', 'PULUPANDAN'),
+    ('PURA', 'PURA'),
+    ('QUEZON', 'QUEZON'),
+    ('QUEZON   ', 'QUEZON  '),
+    ('QUEZON CITY', 'QUEZON CITY'),
+    ('QUINAPONDAN', 'QUINAPONDAN'),
+    ('QUIRINO', 'QUIRINO'),
+    ('QUIRINO (ANGAKI)', 'QUIRINO (ANGAKI)'),
+    ('RAGAY', 'RAGAY'),
+    ('RAJAH BUAYAN', 'RAJAH BUAYAN'),
+    ('RAMON', 'RAMON'),
+    ('RAMON MAGSAYSAY (LIARGO)', 'RAMON MAGSAYSAY (LIARGO)'),
+    ('RAMOS', 'RAMOS'),
+    ('RAPU-RAPU', 'RAPU-RAPU'),
+    ('REAL', 'REAL'),
+    ('REINA MERCEDES', 'REINA MERCEDES'),
+    ('REMEDIOS T. ROMUALDEZ', 'REMEDIOS T. ROMUALDEZ'),
+    ('RIZAL', 'RIZAL'),
+    ('RIZAL (MARCOS)', 'RIZAL (MARCOS)'),
+    ('RODRIGUEZ', 'RODRIGUEZ'),
+    ('ROMBLON', 'ROMBLON'),
+    ('RONDA', 'RONDA'),
+    ('ROSALES', 'ROSALES'),
+    ('ROSARIO', 'ROSARIO'),
+    ('ROSELLER T. LIM', 'ROSELLER T. LIM'),
+    ('ROXAS', 'ROXAS'),
+    ('ROXAS CITY', 'ROXAS CITY'),
+    ('SABANGAN', 'SABANGAN'),
+    ('SABLAN', 'SABLAN'),
+    ('SABLAYAN', 'SABLAYAN'),
+    ('SABTANG', 'SABTANG'),
+    ('SADANGA', 'SADANGA'),
+    ('SAGADA', 'SAGADA'),
+    ('SAGAY', 'SAGAY'),
+    ('SAGAY CITY', 'SAGAY CITY'),
+    ('SAGBAYAN', 'SAGBAYAN'),
+    ('SAGUDAY', 'SAGUDAY'),
+    ('SAGUIARAN', 'SAGUIARAN'),
+    ('SAGÑAY', 'SAGÑAY'),
+    ('SAINT BERNARD', 'SAINT BERNARD'),
+    ('SALAY', 'SALAY'),
+    ('SALCEDO', 'SALCEDO'),
+    ('SALLAPADAN', 'SALLAPADAN'),
+    ('SALUG', 'SALUG'),
+    ('SALVADOR', 'SALVADOR'),
+    ('SALVADOR BENEDICTO', 'SALVADOR BENEDICTO'),
+    ('SAMAL', 'SAMAL'),
+    ('SAMBOAN', 'SAMBOAN'),
+    ('SAMPALOC', 'SAMPALOC'),
+    ('SAN AGUSTIN', 'SAN AGUSTIN'),
+    ('SAN ANDRES', 'SAN ANDRES'),
+    ('SAN ANTONIO', 'SAN ANTONIO'),
+    ('SAN BENITO', 'SAN BENITO'),
+    ('SAN CARLOS CITY', 'SAN CARLOS CITY'),
+    ('SAN CLEMENTE', 'SAN CLEMENTE'),
+    ('SAN DIONISIO', 'SAN DIONISIO'),
+    ('SAN EMILIO', 'SAN EMILIO'),
+    ('SAN ENRIQUE', 'SAN ENRIQUE'),
+    ('SAN ESTEBAN', 'SAN ESTEBAN'),
+    ('SAN FABIAN', 'SAN FABIAN'),
+    ('SAN FELIPE', 'SAN FELIPE'),
+    ('SAN FERNANDO', 'SAN FERNANDO'),
+    ('SAN FERNANDO ', 'SAN FERNANDO    '),
+    ('SAN FERNANDO CITY', 'SAN FERNANDO CITY'),
+    ('SAN FRANCISCO', 'SAN FRANCISCO'),
+    ('SAN FRANCISCO (ANAO-AON)', 'SAN FRANCISCO (ANAO-AON)'),
+    ('SAN FRANCISCO (AURORA)', 'SAN FRANCISCO (AURORA)'),
+    ('SAN GABRIEL', 'SAN GABRIEL'),
+    ('SAN GUILLERMO', 'SAN GUILLERMO'),
+    ('SAN ILDEFONSO', 'SAN ILDEFONSO'),
+    ('SAN ISIDRO', 'SAN ISIDRO'),
+    ('SAN JACINTO', 'SAN JACINTO'),
+    ('SAN JOAQUIN', 'SAN JOAQUIN'),
+    ('SAN JORGE', 'SAN JORGE'),
+    ('SAN JOSE', 'SAN JOSE'),
+    ('SAN JOSE CITY', 'SAN JOSE CITY'),
+    ('SAN JOSE DE BUAN', 'SAN JOSE DE BUAN'),
+    ('SAN JOSE DEL MONTE CITY', 'SAN JOSE DEL MONTE CITY'),
+    ('SAN JUAN', 'SAN JUAN'),
+    ('SAN JUAN CITY', 'SAN JUAN CITY'),
+    ('SAN JULIAN', 'SAN JULIAN'),
+    ('SAN LEONARDO', 'SAN LEONARDO'),
+    ('SAN LORENZO', 'SAN LORENZO'),
+    ('SAN LORENZO RUIZ', 'SAN LORENZO RUIZ'),
+    ('SAN LUIS', 'SAN LUIS'),
+    ('SAN MANUEL', 'SAN MANUEL'),
+    ('SAN MARCELINO', 'SAN MARCELINO'),
+    ('SAN MARIANO', 'SAN MARIANO'),
+    ('SAN MATEO', 'SAN MATEO'),
+    ('SAN MIGUEL', 'SAN MIGUEL'),
+    ('SAN NARCISO', 'SAN NARCISO'),
+    ('SAN NICOLAS', 'SAN NICOLAS'),
+    ('SAN PABLO', 'SAN PABLO'),
+    ('SAN PABLO CITY', 'SAN PABLO CITY'),
+    ('SAN PASCUAL', 'SAN PASCUAL'),
+    ('SAN PEDRO', 'SAN PEDRO'),
+    ('SAN POLICARPO', 'SAN POLICARPO'),
+    ('SAN QUINTIN', 'SAN QUINTIN'),
+    ('SAN RAFAEL', 'SAN RAFAEL'),
+    ('SAN REMIGIO', 'SAN REMIGIO'),
+    ('SAN RICARDO', 'SAN RICARDO'),
+    ('SAN ROQUE', 'SAN ROQUE'),
+    ('SAN SEBASTIAN', 'SAN SEBASTIAN'),
+    ('SAN SIMON', 'SAN SIMON'),
+    ('SAN TEODORO', 'SAN TEODORO'),
+    ('SAN VICENTE', 'SAN VICENTE'),
+    ('SANCHEZ-MIRA', 'SANCHEZ-MIRA'),
+    ('SANTA', 'SANTA'),
+    ('SANTA ANA', 'SANTA ANA'),
+    ('SANTA BARBARA', 'SANTA BARBARA'),
+    ('SANTA CATALINA', 'SANTA CATALINA'),
+    ('SANTA CRUZ', 'SANTA CRUZ'),
+    ('SANTA ELENA', 'SANTA ELENA'),
+    ('SANTA FE', 'SANTA FE'),
+    ('SANTA IGNACIA', 'SANTA IGNACIA'),
+    ('SANTA JOSEFA', 'SANTA JOSEFA'),
+    ('SANTA LUCIA', 'SANTA LUCIA'),
+    ('SANTA MAGDALENA', 'SANTA MAGDALENA'),
+    ('SANTA MARCELA', 'SANTA MARCELA'),
+    ('SANTA MARGARITA', 'SANTA MARGARITA'),
+    ('SANTA MARIA', 'SANTA MARIA'),
+    ('SANTA MONICA (SAPAO)', 'SANTA MONICA (SAPAO)'),
+    ('SANTA PRAXEDES', 'SANTA PRAXEDES'),
+    ('SANTA RITA', 'SANTA RITA'),
+    ('SANTA ROSA', 'SANTA ROSA'),
+    ('SANTA ROSA CITY', 'SANTA ROSA CITY'),
+    ('SANTA TERESITA', 'SANTA TERESITA'),
+    ('SANTANDER', 'SANTANDER'),
+    ('SANTIAGO', 'SANTIAGO'),
+    ('SANTIAGO CITY', 'SANTIAGO CITY'),
+    ('SANTO DOMINGO', 'SANTO DOMINGO'),
+    ('SANTO NIÑO', 'SANTO NIÑO'),
+    ('SANTO NIÑO (FAIRE)', 'SANTO NIÑO (FAIRE)'),
+    ('SANTO TOMAS', 'SANTO TOMAS'),
+    ('SANTOL', 'SANTOL'),
+    ('SAPA-SAPA', 'SAPA-SAPA'),
+    ('SAPAD', 'SAPAD'),
+    ('SAPANG DALAGA', 'SAPANG DALAGA'),
+    ('SAPANG PALAY', 'SAPANG PALAY'),
+    ('SAPIAN', 'SAPIAN'),
+    ('SARA', 'SARA'),
+    ('SARANGANI', 'SARANGANI'),
+    ('SARIAYA', 'SARIAYA'),
+    ('SARRAT', 'SARRAT'),
+    ('SASMUAN', 'SASMUAN'),
+    ('SCIENCE CITY OF MUÑOZ', 'SCIENCE CITY OF MUÑOZ'),
+    ('SEBASTE', 'SEBASTE'),
+    ('SEN. NINOY AQUINO', 'SEN. NINOY AQUINO'),
+    ('SERGIO OSMEÑA SR.', 'SERGIO OSMEÑA SR.'),
+    ('SEVILLA', 'SEVILLA'),
+    ('SHARIFF AGUAK (MAGANOY)', 'SHARIFF AGUAK (MAGANOY)'),
+    ('SHARIFF SAYDONA MUSTAPHA', 'SHARIFF SAYDONA MUSTAPHA'),
+    ('SIASI', 'SIASI'),
+    ('SIATON', 'SIATON'),
+    ('SIAY', 'SIAY'),
+    ('SIAYAN', 'SIAYAN'),
+    ('SIBAGAT', 'SIBAGAT'),
+    ('SIBALOM', 'SIBALOM'),
+    ('SIBONGA', 'SIBONGA'),
+    ('SIBUCO', 'SIBUCO'),
+    ('SIBULAN', 'SIBULAN'),
+    ('SIBUNAG', 'SIBUNAG'),
+    ('SIBUTAD', 'SIBUTAD'),
+    ('SIBUTU', 'SIBUTU'),
+    ('SIERRA BULLONES', 'SIERRA BULLONES'),
+    ('SIGAY', 'SIGAY'),
+    ('SIGMA', 'SIGMA'),
+    ('SIKATUNA', 'SIKATUNA'),
+    ('SILAGO', 'SILAGO'),
+    ('SILANG', 'SILANG'),
+    ('SILAY CITY', 'SILAY CITY'),
+    ('SILVINO LOBOS', 'SILVINO LOBOS'),
+    ('SIMUNUL', 'SIMUNUL'),
+    ('SINACABAN', 'SINACABAN'),
+    ('SINAIT', 'SINAIT'),
+    ('SINDANGAN', 'SINDANGAN'),
+    ('SINILOAN', 'SINILOAN'),
+    ('SIOCON', 'SIOCON'),
+    ('SIPALAY CITY', 'SIPALAY CITY'),
+    ('SIPOCOT', 'SIPOCOT'),
+    ('SIQUIJOR', 'SIQUIJOR'),
+    ('SIRAWAI', 'SIRAWAI'),
+    ('SIRUMA', 'SIRUMA'),
+    ('SISON', 'SISON'),
+    ('SITANGKAI', 'SITANGKAI'),
+    ('SOCORRO', 'SOCORRO'),
+    ('SOFRONIO ESPAÑOLA', 'SOFRONIO ESPAÑOLA'),
+    ('SOGOD', 'SOGOD'),
+    ('SOLANA', 'SOLANA'),
+    ('SOLANO', 'SOLANO'),
+    ('SOLSONA', 'SOLSONA'),
+    ('SOMINOT (DON MARIANO MARCOS)', 'SOMINOT (DON MARIANO MARCOS)'),
+    ('SORSOGON CITY', 'SORSOGON CITY'),
+    ('SOUTH UBIAN', 'SOUTH UBIAN'),
+    ('SOUTH UPI', 'SOUTH UPI'),
+    ('SPRATLYS', 'SPRATLYS'),
+    ('STO. TOMAS', 'STO. TOMAS'),
+    ('STO.NIÑO', 'STO.NIÑO'),
+    ('SUAL', 'SUAL'),
+    ('SUBIC', 'SUBIC'),
+    ('SUDIPEN', 'SUDIPEN'),
+    ('SUGBONGCOGON', 'SUGBONGCOGON'),
+    ('SUGPON', 'SUGPON'),
+    ('SULAT', 'SULAT'),
+    ('SULOP', 'SULOP'),
+    ('SULTAN DUMALONDONG', 'SULTAN DUMALONDONG'),
+    ('SULTAN NAGA DIMAPORO', 'SULTAN NAGA DIMAPORO'),
+    ('SULTAN SA BARONGIS (LAMBAYONG)', 'SULTAN SA BARONGIS (LAMBAYONG)'),
+    ('SUMILAO  ', 'SUMILAO '),
+    ('SUMISIP', 'SUMISIP'),
+    ('SURALLAH', 'SURALLAH'),
+    ('SURIGAO CITY', 'SURIGAO CITY'),
+    ('SUYO', 'SUYO'),
+    ("T'BOLI", "T'BOLI"),
+    ('TAAL', 'TAAL'),
+    ('TABACO CITY', 'TABACO CITY'),
+    ('TABANGO', 'TABANGO'),
+    ('TABINA', 'TABINA'),
+    ('TABOGON', 'TABOGON'),
+    ('TABONTABON', 'TABONTABON'),
+    ('TABUAN-LASA', 'TABUAN-LASA'),
+    ('TABUELAN', 'TABUELAN'),
+    ('TABUK', 'TABUK'),
+    ('TACLOBAN CITY', 'TACLOBAN CITY'),
+    ('TACURONG CITY', 'TACURONG CITY'),
+    ('TADIAN', 'TADIAN'),
+    ('TAFT', 'TAFT'),
+    ('TAGANA-AN', 'TAGANA-AN'),
+    ('TAGAPUL-AN', 'TAGAPUL-AN'),
+    ('TAGAYTAY CITY', 'TAGAYTAY CITY'),
+    ('TAGBILARAN CITY', 'TAGBILARAN CITY'),
+    ('TAGBINA', 'TAGBINA'),
+    ('TAGKAWAYAN', 'TAGKAWAYAN'),
+    ('TAGO', 'TAGO'),
+    ('TAGOLOAN', 'TAGOLOAN'),
+    ('TAGOLOAN II', 'TAGOLOAN II'),
+    ('TAGUDIN', 'TAGUDIN'),
+    ('TAGUIG CITY', 'TAGUIG CITY'),
+    ('TAGUM CITY', 'TAGUM CITY'),
+    ('TALACOGON', 'TALACOGON'),
+    ('TALAINGOD', 'TALAINGOD'),
+    ('TALAKAG  ', 'TALAKAG '),
+    ('TALALORA', 'TALALORA'),
+    ('TALAVERA', 'TALAVERA'),
+    ('TALAYAN', 'TALAYAN'),
+    ('TALIBON', 'TALIBON'),
+    ('TALIPAO', 'TALIPAO'),
+    ('TALISAY', 'TALISAY'),
+    ('TALISAY CITY', 'TALISAY CITY'),
+    ('TALISAYAN', 'TALISAYAN'),
+    ('TALITAY', 'TALITAY'),
+    ('TALUGTUG', 'TALUGTUG'),
+    ('TALUSAN', 'TALUSAN'),
+    ('TAMBULIG', 'TAMBULIG'),
+    ('TAMPAKAN', 'TAMPAKAN'),
+    ('TAMPARAN', 'TAMPARAN'),
+    ('TAMPILISAN', 'TAMPILISAN'),
+    ('TANAUAN', 'TANAUAN'),
+    ('TANAUAN CITY', 'TANAUAN CITY'),
+    ('TANAY', 'TANAY'),
+    ('TANDAG CITY', 'TANDAG CITY'),
+    ('TANDUBAS', 'TANDUBAS'),
+    ('TANGALAN', 'TANGALAN'),
+    ('TANGCAL', 'TANGCAL'),
+    ('TANGUB CITY', 'TANGUB CITY'),
+    ('TANJAY CITY', 'TANJAY CITY'),
+    ('TANTANGAN', 'TANTANGAN'),
+    ('TANUDAN', 'TANUDAN'),
+    ('TANZA', 'TANZA'),
+    ('TAPAZ', 'TAPAZ'),
+    ('TAPUL', 'TAPUL'),
+    ('TARAKA', 'TARAKA'),
+    ('TARANGNAN', 'TARANGNAN'),
+    ('TARLAC CITY', 'TARLAC CITY'),
+    ('TARRAGONA', 'TARRAGONA'),
+    ('TAYABAS CITY', 'TAYABAS CITY'),
+    ('TAYASAN', 'TAYASAN'),
+    ('TAYSAN', 'TAYSAN'),
+    ('TAYTAY', 'TAYTAY'),
+    ('TAYUG', 'TAYUG'),
+    ('TAYUM', 'TAYUM'),
+    ('TERESA', 'TERESA'),
+    ('TERNATE', 'TERNATE'),
+    ('TIAONG', 'TIAONG'),
+    ('TIBIAO', 'TIBIAO'),
+    ('TIGAON', 'TIGAON'),
+    ('TIGBAO', 'TIGBAO'),
+    ('TIGBAUAN', 'TIGBAUAN'),
+    ('TINAMBAC', 'TINAMBAC'),
+    ('TINEG', 'TINEG'),
+    ('TINGLAYAN', 'TINGLAYAN'),
+    ('TINGLOY', 'TINGLOY'),
+    ('TINOC', 'TINOC'),
+    ('TIPO-TIPO', 'TIPO-TIPO'),
+    ('TITAY', 'TITAY'),
+    ('TIWI', 'TIWI'),
+    ('TOBIAS FORNIER', 'TOBIAS FORNIER'),
+    ('TOBOSO', 'TOBOSO'),
+    ('TOLEDO CITY', 'TOLEDO CITY'),
+    ('TOLOSA', 'TOLOSA'),
+    ('TOMAS OPPUS', 'TOMAS OPPUS'),
+    ('TORRIJOS', 'TORRIJOS'),
+    ('TRECE MARTIRES CITY', 'TRECE MARTIRES CITY'),
+    ('TRENTO', 'TRENTO'),
+    ('TRINIDAD', 'TRINIDAD'),
+    ('TUAO', 'TUAO'),
+    ('TUBA', 'TUBA'),
+    ('TUBAJON', 'TUBAJON'),
+    ('TUBAO', 'TUBAO'),
+    ('TUBARAN', 'TUBARAN'),
+    ('TUBAY', 'TUBAY'),
+    ('TUBIGON', 'TUBIGON'),
+    ('TUBLAY', 'TUBLAY'),
+    ('TUBO', 'TUBO'),
+    ('TUBOD', 'TUBOD'),
+    ('TUBUNGAN', 'TUBUNGAN'),
+    ('TUBURAN', 'TUBURAN'),
+    ('TUDELA', 'TUDELA'),
+    ('TUGAYA', 'TUGAYA'),
+    ('TUGUEGARAO CITY', 'TUGUEGARAO CITY'),
+    ('TUKURAN', 'TUKURAN'),
+    ('TULUNAN', 'TULUNAN'),
+    ('TUMAUINI', 'TUMAUINI'),
+    ('TUNGA', 'TUNGA'),
+    ('TUNGAWAN', 'TUNGAWAN'),
+    ('TUPI', 'TUPI'),
+    ('TURTLE ISLANDS', 'TURTLE ISLANDS'),
+    ('TUY', 'TUY'),
+    ('UBAY', 'UBAY'),
+    ('UMINGAN', 'UMINGAN'),
+    ('UNGKAYA PUKAN', 'UNGKAYA PUKAN'),
+    ('UNISAN', 'UNISAN'),
+    ('URBIZTONDO', 'URBIZTONDO'),
+    ('URDANETA CITY', 'URDANETA CITY'),
+    ('USON', 'USON'),
+    ('UYUGAN', 'UYUGAN'),
+    ('VALDERRAMA', 'VALDERRAMA'),
+    ('VALENCIA', 'VALENCIA'),
+    ('VALENCIA CITY', 'VALENCIA CITY'),
+    ('VALENZUELA CITY', 'VALENZUELA CITY'),
+    ('VALLADOLID', 'VALLADOLID'),
+    ('VALLEHERMOSO', 'VALLEHERMOSO'),
+    ('VERUELA', 'VERUELA'),
+    ('VICTORIA', 'VICTORIA'),
+    ('VICTORIAS CITY', 'VICTORIAS CITY'),
+    ('VIGA', 'VIGA'),
+    ('VIGAN CITY', 'VIGAN CITY'),
+    ('VILLABA', 'VILLABA'),
+    ('VILLANUEVA', 'VILLANUEVA'),
+    ('VILLAREAL', 'VILLAREAL'),
+    ('VILLASIS', 'VILLASIS'),
+    ('VILLAVERDE', 'VILLAVERDE'),
+    ('VILLAVICIOSA', 'VILLAVICIOSA'),
+    ('VINCENZO A. SAGUN', 'VINCENZO A. SAGUN'),
+    ('VINTAR', 'VINTAR'),
+    ('VINZONS', 'VINZONS'),
+    ('VIRAC', 'VIRAC'),
+    ('WAO', 'WAO'),
+    ('ZAMBOANGA CITY', 'ZAMBOANGA CITY'),
+    ('ZAMBOANGUITA', 'ZAMBOANGUITA'),
+    ('ZARAGOZA', 'ZARAGOZA'),
+    ('ZARRAGA', 'ZARRAGA'),
+    ('ZUMARRAGA', 'ZUMARRAGA'))
+CLASS_OF_STATION_LIST = (
+    ('FX', 'FX'),
+    ('FB', 'FB'),
+    ('TC', 'TC'),
+    ('RT', 'RT'))
+##########
+# TESTING
+'''
+class DirectorListManager(models.Manager):
+    def get_query_set(self):
+        return super(DirectorManager, self).get_query_set().filter(group='Director')
+'''
+# END TESTING MODULE
+###########
+class NAFD_User(AbstractUser):
+    code_name = models.CharField(max_length=10, blank=True, null=False, unique=True)
+    kpi_target= models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True)
+    foryear   = models.DecimalField(max_digits=4, decimal_places=0, blank=True, null=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'code_name', 'kpi_target', 'foryear']
+
+    def __unicode__(self):
+        return self.code_name
+
+NAFD_User._meta.get_field_by_name('email')[0]._unique=True
+
+class NAFD_USER_GROUPS(models.Model):
+    nafd_user = models.ForeignKey(NAFD_User, null=True, on_delete=models.SET_NULL)
+    group     = models.ForeignKey(Group, null=True, on_delete=models.SET_NULL)
+
+    objects     = models.Manager()    # default Manager
+    #director_objects = DirectorListManager() # Manager to filter for Director Only
+
+    def __unicode__(self):
+       return self.nafd_user.code_name
+
+class Province(models.Model):
+    province        = models.CharField(max_length=150, blank=True, null=True, verbose_name="Province")
+
+    def __unicode__(self):
+        return self.province
+
+    class Meta:
+        verbose_name        = "Province"
+        verbose_name_plural = "Provinces"
+#ok!
+class PhilAddress(models.Model):
+    id              = models.AutoField(primary_key=True)
+    city            = models.CharField(max_length=150, blank=True, null=True, verbose_name="Town/City")
+    province        = models.CharField(max_length=150, blank=True, null=True, verbose_name="Province")
+    region          = models.CharField(max_length=50, blank=True, null=True, verbose_name="Region")
+    regioncode      = models.CharField(max_length=50, blank=True, null=True, verbose_name="Region Code")
+
+    class Meta:
+        verbose_name_plural = "Cities / Towns"
+        verbose_name        = "Address"
+        ordering            = ['city', 'province', 'regioncode']
+
+    def __unicode__(self):
+        return u'%s, %s, %s' % (self.city, self.province, self.region)
+#ok!
+class Classofstation(models.Model):
+    id              = models.AutoField(primary_key=True)
+    class_name      = models.CharField(max_length=50, blank=True, null=True, verbose_name="Class Name")
+    description     = models.CharField(max_length=300, blank=True, null=True, verbose_name="Description") # lic_to_operate
+
+    class Meta:        
+        verbose_name_plural = "Class of Stations"
+        verbose_name        = "Class of Station"
+        ordering            = ['class_name']
+
+    def __unicode__(self):
+        return self.class_name
+#ok!
+class EquipModel(models.Model):
+    id              = models.AutoField(primary_key=True)
+    make            = models.CharField(max_length=100, blank=True, null=True, verbose_name="Make/Models", default='NO MODEL')    
+
+    class Meta:        
+        verbose_name_plural = "Equipment Models"
+        verbose_name        = "Equipment Model"
+        ordering            = ['make']
+
+    def __unicode__(self):
+        return self.make
+#ok!
+class Antenna(models.Model):
+    id              = models.AutoField(primary_key=True)
+    antenna_type    = models.CharField(max_length=100, blank=False, null=False, verbose_name="Antenna Type")    
+    directivity     = models.CharField(max_length=50, blank=True, null=True, verbose_name="Directivity")    
+    height          = models.CharField(max_length=50, blank=True, null=True, verbose_name="Height from Ground")    
+    gain            = models.CharField(max_length=100, blank=True, null=True, verbose_name="Gain")    
+
+    def __unicode__(self):
+        return self.antenna_type
+
+    class Meta:
+        verbose_name        = "Antenna"
+#ok!
+class LogBook_counter(models.Manager):
+    def get_query_set(self):       
+        return super(LogBook_counter, self).get_query_set().only('controlNo').latest('controlNo')        
+#ok!
+class SOA_counter(models.Manager):
+    def get_query_set(self):
+        present = datetime.now()     
+        return super(SOA_counter, self).get_query_set().filter(date_issued__year=present.year, date_issued__month=present.month)
+#ok!
+class App_type(models.Model):
+    id              = models.AutoField(primary_key=True)
+    trans_type      = models.CharField(max_length=20, blank=True, null=True, verbose_name='Application Type')
+
+    class Meta:
+        verbose_name_plural = 'Applications Types'
+        verbose_name        = "Applications Type"
+
+    def __unicode__(self):
+        return self.trans_type
+## on test #ok!
+class FAS_Data(models.Model):
+    id              = models.AutoField(primary_key=True)
+    ReferenceNumber = models.CharField(max_length=20,blank=True, null=True,verbose_name='Ref No.')
+    Licensee        = models.CharField(max_length=30,blank=True, null=True,verbose_name='Licensee')
+    Tx              = models.DecimalField(max_digits=10,decimal_places=4,null=True,blank=True, verbose_name='TX (Mhz)')
+    Rx              = models.DecimalField(max_digits=10,decimal_places=4,null=True,blank=True, verbose_name='RX (Mhz)')
+    CallSign_A      = models.CharField(max_length=30,blank=True, null=True,verbose_name='Call-Sign A')
+    CallSign_B      = models.CharField(max_length=30,blank=True, null=True,verbose_name='Call-Sign B')
+    Bwe             = models.CharField(max_length=20,blank=True, null=True,verbose_name='BW & Emission')
+    Stn_A           = models.CharField(max_length=150,blank=True, null=True,verbose_name='Station A')
+    Stn_B           = models.CharField(max_length=150,blank=True, null=True,verbose_name='Station B')
+    Remarks_1       = models.TextField(max_length=50,blank=True, null=True,verbose_name='Station A')
+    Class           = models.CharField(max_length=20,blank=True, null=True,verbose_name='Class of Station')
+    Power_dbm       = models.DecimalField(max_digits=10,decimal_places=4,null=True,blank=True, verbose_name='Power Output (dBm)')
+    Power_kW        = models.DecimalField(max_digits=10,decimal_places=4,null=True,blank=True, verbose_name='Power Output (kW)')
+    Freq_range      = models.CharField(max_length=20,blank=True, null=True,verbose_name='Frequency Range')
+    Make            = models.CharField(max_length=20,blank=True, null=True,verbose_name='Make')
+    Model           = models.CharField(max_length=20,blank=True, null=True,verbose_name='Model/Type')
+    SN              = models.CharField(max_length=20,blank=True, null=True,verbose_name='Serial Number')
+    E_Long_Deg_A    = models.DecimalField(max_digits=10,decimal_places=4,null=True,blank=True, verbose_name='Longitude Degree A')
+    E_Long_Min_A    = models.DecimalField(max_digits=10,decimal_places=4,null=True,blank=True, verbose_name='Longitude Minute A')
+    E_Long_Sec_A    = models.DecimalField(max_digits=10,decimal_places=4,null=True,blank=True, verbose_name='Longitude Second A')
+    # to be continue...
+        
+    class Meta:
+        #db_table    = u'FAS-FAN'
+        verbose_name        = u'FAS-FAN'
+        verbose_name_plural = u'FAS-FANs'
+        ordering    = ['ReferenceNumber']
+
+    def __unicode__(self):
+        return self.ReferenceNumber
+#ok!
+class Carrier(models.Model):
+    id              = models.AutoField(primary_key=True)
+    companyname     = models.CharField(null=True, max_length=100, blank=True, verbose_name='Company Name')
+    street          = models.CharField(null=True, max_length=150, blank=True, verbose_name='Street')
+    address         = models.ForeignKey(PhilAddress, null=True, on_delete=models.SET_NULL)# max_digits=10, decimal_places=0, blank=True)
+    contactperson   = models.CharField(null=True, max_length=50, blank=True, verbose_name='Contact Person')
+    #modifiedby_id   = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    #datemodified    = models.DateField(auto_now=True, null=True, blank=True)    
+    c_initial       = models.CharField(null=True, max_length=20, blank=True, verbose_name='Company Initial')
+
+    def __unicode__(self):
+        return self.companyname
+
+    class Meta:
+        verbose_name        = "Public Telecom Entity"
+        verbose_name_plural = "Public Telecom Companies"
+        ordering            = ['companyname']
+    def address_city(self):
+        return self.address.city
+#ok!
+class Sitename(models.Model):   # GPS related
+    id              = models.AutoField(primary_key=True)
+    site            = models.CharField(max_length=300, blank=True, null=True, verbose_name="Site")
+    street          = models.CharField(max_length=150, blank=True, null=True, verbose_name="Street")
+    address         = models.ForeignKey(PhilAddress, null=True, on_delete=models.SET_NULL)
+    carrier         = models.ForeignKey(Carrier, null=True, on_delete=models.PROTECT)
+    deg_long        = models.DecimalField(null=True, max_digits=3, decimal_places=0, blank=True)
+    min_long        = models.DecimalField(null=True, max_digits=3, decimal_places=0, blank=True)
+    sec_long        = models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True)
+    longitude       = models.CharField(max_length=50, blank=True, null=True, verbose_name="Longitude")
+    deg_lat         = models.DecimalField(null=True, max_digits=3, decimal_places=0, blank=True)
+    min_lat         = models.DecimalField(null=True, max_digits=3, decimal_places=0, blank=True)
+    sec_lat         = models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True)
+    latitude        = models.CharField(max_length=50, blank=True, null=True, verbose_name="Latitude")
+
+
+    class Meta:        
+        verbose_name_plural = "Cell Site names"
+        verbose_name        = "Site name"
+
+    def __unicode__(self):
+        return self.site
+
+    def save(self, *args, **kwargs):               
+        self.longitude = str(self.deg_long) + '° - ' + str(self.min_long) + "' - " + str(self.sec_long) +'"'       
+        self.latitude = str(self.deg_lat) + '° - ' + str(self.min_lat) + "' - "+ str(self.sec_lat)  +'"'      
+        
+        super(Sitename, self).save(*args, **kwargs) # Call the "real" save() method.
+#ok!
+class Official_Receipt(models.Model):
+    carrier         = models.ForeignKey(Carrier, null=True, blank= True, on_delete=models.PROTECT)
+    or_no           = models.DecimalField(primary_key=True, max_digits=15, verbose_name="Official Receipt", decimal_places=0)
+    date_paid       = models.DateField(null=True, verbose_name="Date Paid", blank=True)
+    amount          = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
+    validity_from   = models.DateField(null=False, verbose_name="Valid from", blank=True)
+    validity_to     = models.DateField(null=False, verbose_name="Valid until", blank=True)
+    remarks         = models.CharField(max_length=2000, blank=True, null=True, verbose_name="Remarks")    
+    #dst             = models.CharField(max_length=20, blank=True, null=True, verbose_name="Documentary Stamp") # ???  
+
+    class Meta:
+        #db_table            = u'Official_Receipt' #name of table created in oracle sql developer not in django
+        verbose_name        = "Official Receipt"
+        verbose_name_plural = "Official Receipts"
+        ordering            = ["or_no"]
+    def __unicode__(self):
+        return u'%s' % self.or_no 
+#ok!
+class SOA(models.Model):
+    id              = models.AutoField(primary_key=True)
+    soa_code        = models.CharField(max_length=20, blank=True, null=True, verbose_name='Statement of Account')
+    #date_issued     = models.DateField(auto_now=True, blank=True, null=True)
+    official_receipt= models.ForeignKey(Official_Receipt, null=True, blank=True, on_delete=models.SET_NULL)
+    date_issued     = models.DateField(blank=True, null=True, default=datetime.now())
+    carrier         = models.ForeignKey(Carrier, null=True, verbose_name ='Public Carrier', on_delete=models.PROTECT)
+    service_type    = models.CharField(max_length=20, choices=SERVICE_TYPE, default='MICROWAVE', verbose_name='Service')  
+    app_type        = models.ManyToManyField(App_type, verbose_name='Application Type')
+    issued_by       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='prepared_by', null=True, blank=True, on_delete=models.SET_NULL)
+    approved_by     = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='approved_by', null=True, blank=True, on_delete=models.SET_NULL)
+    no_years        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=5, default=1, verbose_name='No. of Years')
+    validity_from   = models.DateField(default=datetime.now(), null=True, blank=True, verbose_name='Validity from')
+    validity_to     = models.DateField(default=lambda:datetime.now()+timedelta(days=365), blank=True, verbose_name='Validity to')    
+    suf_fees        = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='SUFs')   
+    filing_fee      = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Filing fee')    
+    purchase_fee    = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Purchase fee')
+    possess_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Possess fee')
+    cprsl_filing_fee= models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Filing fee for CP/RSL')    
+    const_fee       = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Construction fee')    
+    license_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='License fee')
+    inspection_fee  = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Inspection fee')
+    mod_fee         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Modification fee')
+    mod_filing_fee  = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Filing fee for Modification')
+    storage_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Storage fee')
+    rsl_dst_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='DST RSL')
+    ppp_dst_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='DST PPP')
+    sto_dst_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='DST Storage')   
+    sur_lic         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Surcharge Lic')
+    sur_suf         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Surcharge SUF')
+    duplicate_fee   = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Duplicate fee')
+    channel         = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Channel')    
+    ppp_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of PPP Units')
+    rsl_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of RSL Units')
+    mod_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Mod Units')
+    stor_units      = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Storage Units')
+
+
+    objects         = models.Manager() # default manager
+    soa_objects     = SOA_counter() # custom manager
+    
+    class Meta:
+        #db_table            = u'ccad_SOA'
+        verbose_name_plural = "Statement of Accounts"
+        verbose_name        = "Statement of Account"
+
+    def __unicode__(self):
+        return u'%s' % self.soa_code
+
+class SOA_App_type(models.Model):
+    soa         = models.ForeignKey(SOA, null=True, related_name='soas', on_delete=models.SET_NULL)
+    app_type    = models.ForeignKey(App_type, null=True, related_name='apptypes', on_delete=models.SET_NULL)
+    
+
+    class Meta:
+        db_table = u'soa_app_type'
+
+    #@classmethod
+    def _get_work_items(cls, self):        
+        if self.app_type.trans_type == 'PPP':
+            return self.ppp_units
+        elif self.app_type.trans_type == 'CP':
+            return self.conts_fee/360
+        elif self.app_type.trans_type == 'RSL':
+            return self.rsl_units
+        elif self.app_type.trans_type == 'MOD':
+            return self.mod_units
+        elif self.app_type.trans_type == 'STO':
+            return self.stor_units
+        elif self.app_type.trans_type == 'DEMO':
+            return self.ppp_units
+        elif self.app_type.trans_type == 'TP':
+            return self.rsl_units
+        elif self.app_type.trans_type == 'DUP':
+            return self.duplicate_fee/120
+    wi          = property(_get_work_items)
+#ok!
+class SOA_detail(models.Model):
+    id              = models.AutoField(primary_key=True)
+    soa             = models.ForeignKey(SOA, related_name='Statement of Account', verbose_name='Statement of Account')
+    site_no         = models.CharField(max_length=20, blank=True, null=True, verbose_name='Site No')                                            ######## added
+    sitename        = models.CharField(max_length=100, verbose_name='Site Name')
+    city            = models.CharField(max_length=50, blank=True, null=True, verbose_name='City')                                               ######## added 
+    site_addr       = models.CharField(null=True, blank=True, max_length=500, verbose_name='Site Address')
+    band            = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='Band')               ######## added    
+    call_sign       = models.CharField(null=True, blank=True, max_length=100, verbose_name='Call-Sign')   
+    no_years        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Years')    
+    old_chan        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='Old No. of Chan')    
+    channel         = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Channel')    
+    ppp_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of PPP Units')
+    rsl_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of RSL Units')
+    freq            = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Freq')
+    bw              = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Bandwidth')
+    suf_rate        = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=5, default=0, verbose_name='SUF rate') 
+    suf_fee         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='SUF')   
+    filing_fee      = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Filing fee')    
+    no_ppp_ext      = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='No. of PPP Ext')    
+    purchase_fee    = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Purchase fee')
+    possess_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Possess fee')
+    cprsl_filing_fee= models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Filing fee for CP/RSL')    
+    const_fee       = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Construction fee')    
+    license_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='License fee')
+    inspection_fee  = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Inspection fee')
+    mod_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Mod Units')
+    mod_fee         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Modification fee')
+    mod_filing_fee  = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Filing fee for Modification')
+    stor_units      = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Storage Units')
+    storage_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Storage fee')
+    rsl_dst_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='DST RSL')
+    ppp_dst_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='DST PPP')
+    sto_dst_fee     = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='DST Storage')   
+    sur_lic_percent = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Surcharge Lic Percent')
+    sur_lic         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Surcharge Lic')
+    sur_suf_percent = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Surcharge SUF Percent')
+    sur_suf         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Surcharge SUF')
+    duplicate_fee   = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Duplicate fee')
+    #demo_fee        = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Demo fee')
+
+    class Meta:
+        verbose_name_plural = "Statement of Account Details"
+        verbose_name        = "Statement of Account Detail"
+
+    def __unicode__(self):
+        return self.sitename
+#ok!
+class Pending_desc(models.Model):
+    id              = models.AutoField(primary_key=True)
+    pend_description= models.CharField(max_length=100, verbose_name='Description', null=False, blank=False, help_text='Option to pend an application')
+
+    class Meta:
+        verbose_name_plural = "Pending Options"
+        verbose_name        = "Pending Option"
+        ordering            = ['pend_description']
+
+    def __unicode__(self):
+        return u'%s' % self.pend_description
+#ok!
+class Letter_LogBook(models.Model):
+    id              = models.AutoField(primary_key=True)
+    controlNo       = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Control No')
+    dateEntry       = models.DateField(auto_now=True, null=True, verbose_name="Date Entry", blank=True) 
+    letter_from     = models.CharField(max_length=150, blank=True, null=True, verbose_name='From', help_text='For non-Carrier Applications')
+    letter_to       = models.CharField(max_length=150, blank=True, null=True, verbose_name='To', help_text='For non-Carrier Applications')
+    subject         = models.CharField(max_length=150, blank=True, null=True, verbose_name='Subject', help_text='For non-Carrier Applications')
+
+    objects         = models.Manager() # default manager
+    logbook_objects = LogBook_counter() # custom manager
+    
+    class Meta:
+        verbose_name_plural = "Logbook for Letters"
+        verbose_name        = "Logbook aside from application"
+
+    def __unicode__(self):
+        return u'%s' % self.subject     
+#ok!
+class LogBook_Remarks(models.Model):
+    Remarks         = models.CharField(null=True, blank=True, max_length=200,verbose_name = 'Remarks')
+    dateEntry       = models.DateField(auto_now=True, null=True, verbose_name="Date Entry", blank=True)
+    written_by      = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='writteb_by', null=True, blank=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name_plural = "Logbook Remarks"
+        verbose_name        = "Logbook Remark"
+
+    def __unicode__(self):
+        return u'%s' % self.subject     
+#ok!
+class no_work(models.Model):
+    NO_WORK_TYPE    = (
+        (1, 'WHOLE DAY'),
+        (0.5, 'HALF DAY'),
+        )
+    nowork_day      = models.DateField(verbose_name='Day')
+    tframe          = models.DecimalField(max_digits=3, decimal_places=1, choices=NO_WORK_TYPE)
+    description     = models.CharField(max_length=150, blank=True, null=True)
+#ok!
+def validate_theday(value):
+    qry = no_work.objects.filter(Q(nowork_day__month=value.month) & Q(nowork_day__day=value.day))
+    if qry.exists():
+        raise ValidationError(u'The date you specified is a holiday.')
+    if value.isoweekday() == 6 or value.isoweekday() == 7:
+        raise ValidationError(u'The date you specified is a weekend.')
+#ok!
+class LogBook(models.Model):
+    id              = models.AutoField(primary_key=True)        
+    dateEntry       = models.DateField(auto_now=True, verbose_name="Date Entry", null=True, blank=True)
+    acceptancedate  = models.DateField(default=datetime.now(), verbose_name="Date of Acceptance", null=True, blank=True, help_text="Date should not fall in holidays or weekend.", validators=[validate_theday])
+    controlNo       = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Control No', help_text="Auto fill-up")
+    carrier         = models.ForeignKey(Carrier, null=True, verbose_name ='Public Carrier', on_delete=models.PROTECT)  
+    transtype       = models.CharField(max_length=100, default='NEW', verbose_name='Application Type')
+    service         = models.CharField(max_length=20, null=True, blank=True, choices=SERVICE_TYPE, verbose_name = 'Service Applied')    
+    units           = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True, verbose_name='Unit(s)', default=0)
+    noofstation     = models.DecimalField(max_digits=10, decimal_places=0, null=True, blank=True, verbose_name='No. of Station(s)', default=0)
+    first_stn       = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'First Station')
+    last_stn        = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Last Station')    
+    soa             = models.ManyToManyField(SOA, null=True, blank=True, through='Statements')
+    current_user    = models.ForeignKey(settings.AUTH_USER_MODEL,  limit_choices_to={'groups__name': "Regulation Branch Personnel"}, null=True, blank=True, related_name='current_user', verbose_name='Assign to', on_delete=models.SET_NULL)
+    permitNo        = models.CharField(null=True, blank=True, max_length=30, verbose_name ='Permit No')
+    logbook_remarks = models.CharField(null=True, blank=True, max_length=2000, verbose_name ='Remarks')
+    #docfile         = models.FileField(upload_to='attachments/%Y/%B', help_text ='max 2.5 megabytes', null=True, blank=True, verbose_name='PPP File')
+    status          = models.CharField(max_length=40, choices=STATUS_TYPE, default=u'CHECKING REQUIREMENTS', verbose_name='Status', help_text='Auto fill-up')
+    encoder_status  = models.DecimalField(null=True, max_digits=3, default=2, decimal_places=2, blank=True, verbose_name='Encoder Status')
+    engr_status     = models.DecimalField(null=True, max_digits=3, default=0.1, decimal_places=2, blank=True, verbose_name='Engr Status')
+    chief_status    = models.DecimalField(null=True, max_digits=3, default=2, decimal_places=2, blank=True, verbose_name='Chief Status')
+    due_date        = models.DateTimeField(default=lambda:datetime.now()+timedelta(days=3), blank=True)
+    ischecked       = models.BooleanField(default=0)    
+    fas_data        = models.ForeignKey(FAS_Data, null=True, blank=True, on_delete=models.SET_NULL)     
+    engrchoice      = models.CharField(choices=ENGR_CHOICES, max_length=12, null=True, blank=True)    
+    pend_at         = models.DecimalField(null=True, blank=True, max_digits=3, decimal_places=0)    
+    endorsementfile = models.FileField(upload_to='endorsement/%Y/%B', help_text ='max 2.5 megabytes', null=True, blank=True, verbose_name='Endorsement Letter')    
+    pending_desc    = models.ForeignKey(Pending_desc, null=True, blank=True, on_delete=models.SET_NULL)
+    stm_count       = models.DecimalField(null=True, blank=True, max_digits=3, decimal_places=0)  
+
+    objects         = models.Manager() # default manager
+    logbook_objects = LogBook_counter() # custom manager
+    
+    class Meta:
+        #db_table            = u'Official_Receipt' #name of table created in oracle sql developer not in django
+        verbose_name        = "Log Book"
+        verbose_name_plural = "Log Entries"    
+        permissions=(
+             ("rb_view_logbook", "RB can view Logbook"),
+             ("sec_view_logbook", "Secretary can view Logbook"),
+             ("encoder_view_logbook", "Encoder can view Logbook"),
+             ("engr_view_logbook", "Engr can view Logbook"),
+        )
+
+    def __unicode__(self):
+        return self.controlNo        
+#ok!
+class LogBook_audit(models.Model):
+    id             = models.AutoField(primary_key=True)
+    logbook        = models.ForeignKey(LogBook, verbose_name='Logbook Control No.', null=True)
+    username       = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,  verbose_name='Username', on_delete=models.SET_NULL)
+    status         = models.CharField(null=False, blank=False, max_length=40, choices=STATUS_TYPE, default=u'CHECKING REQUIREMENTS', verbose_name='Status')
+    log_in         = models.DateTimeField(default=lambda:datetime.now(), verbose_name='Work start')
+    log_out        = models.DateTimeField(null=True, blank=True, verbose_name='Work done')
+    period_day     = models.DecimalField(null=True, blank=True, max_digits=3, decimal_places=0, verbose_name='Day length')
+    period_hour    = models.DecimalField(null=True, blank=True, max_digits=3, decimal_places=0, verbose_name='Hour length')
+    period_minute  = models.DecimalField(null=True, blank=True, max_digits=3, decimal_places=0, verbose_name='Minute length')
+    is_ontime      = models.NullBooleanField(default=False, null=True, blank=True,)
+
+    class Meta:
+        verbose_name        = "Logbook Audit"
+        verbose_name_plural = "Logbook Audits"
+        ordering            = ["logbook", "id"]
+
+    def __unicode__(self):
+        return u'%s-%s' % (self.logbook, self.status)   
+#ok!
+class PPPfiles(models.Model):
+    id              = models.AutoField(primary_key=True)
+    logbook         = models.ForeignKey(LogBook, null=True, on_delete=models.SET_NULL)
+    user            = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    docfile         = models.FileField(upload_to='attachments/%Y/%m/%d', help_text ='max 2.5 megabytes', null=True, blank=True, verbose_name='PPP File') #label='Select a file',        
+
+    class Meta:
+        #db_table            = u'Official_Receipt' #name of table created in oracle sql developer not in django
+        verbose_name        = "Permit"
+        verbose_name_plural = "Permit Files"
+        ordering            = ["logbook"]
+
+    def __unicode__(self):
+        return u'%s' % (self.logbook)
+# New Equip Table to be implemented
+def get_sentinel_equipmodel():
+    return EquipModel.objects.get(make='NO MODEL')
+#ok!
+class Equipment(models.Model):
+    id              = models.AutoField(primary_key=True)  
+    #logbook         = models.ForeignKey(LogBook, null=True, blank= True, on_delete=models.SET_NULL)
+    logbook         = models.ManyToManyField(LogBook, null=True, blank=True, through='EquipRack')
+    carrier         = models.ForeignKey(Carrier, null=True, on_delete=models.PROTECT)
+    makemodel       = models.ForeignKey(EquipModel, null=True, blank= True, on_delete=models.SET(get_sentinel_equipmodel))
+    antenna         = models.ForeignKey(Antenna, null=True, on_delete=models.SET_NULL)
+    sitename        = models.ForeignKey(Sitename, null=True, blank= True, on_delete=models.SET_NULL)
+    freqrange_low   = models.DecimalField(max_digits=20,  decimal_places=0, null=True, blank= True)
+    freqrange_high  = models.DecimalField(max_digits=20,  decimal_places=0, null=True, blank= True)
+    freqrange_low2  = models.DecimalField(max_digits=20,  decimal_places=0, null=True, blank= True)
+    freqrange_high2 = models.DecimalField(max_digits=20,  decimal_places=0, null=True, blank= True)
+    callsign        = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign")    
+    usage           = models.CharField(max_length=40, choices=USAGE_TYPE, default=u'MAIN', verbose_name='Equipment Usage')    
+    serialno        = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No")    
+    polarity        = models.CharField(max_length=20, blank=True, null=True)    
+    tx_min          = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx              = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
+    tx_max          = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx_min          = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
+    rx              = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
+    rx_max          = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
+    bwe             = models.CharField(max_length=50, blank=True, null=True, verbose_name="Bandwidth")
+    power           = models.DecimalField(max_digits=10,  decimal_places=0, blank=True, null=True, verbose_name="Power" )
+    unit            = models.CharField(max_length=40, choices=POWER_UNIT, default=u'dBm', verbose_name='Unit')   
+    p_purchase      = models.CharField(max_length=50, blank=True, null=True, verbose_name='Purchase')
+    p_possess       = models.CharField(max_length=50, blank=True, null=True, verbose_name='Possess')
+    p_storage       = models.CharField(max_length=50, blank=True, null=True, verbose_name='Storage')    
+    status          = models.CharField(max_length=20, choices=EQUIP_STATUS, default='New', verbose_name='Status')
+
+    class Meta:
+        #db_table = "Equipment"
+        #ordering = ["-date_modified"]
+        permissions=(
+             ("rb_oview_equipment", "RB can only view Equipment"),
+             ("sec_oview_equipment", "Secretary can only view Equipment"),
+             ("encoder_oview_equipment", "Encoder can only view Equipment"),
+             ("engr_oview_equipment", "Engr can only view Equipment"),
+        )
+
+    def __unicode__(self):
+        return u'%s-%s' % (self.makemodel.make, self.serialno)
+
+    def equip_freqrange(self):  
+        if self.freqrange_low2:      
+            return u'%s-%s / %s-%s' % (self.freqrange_low, self.freqrange_high, self.freqrange_low2, self.freqrange_high2)
+        else:
+            return u'%s-%s' % (self.freqrange_low, self.freqrange_high)
+    equip_freqrange.short_description = 'Freq Range'
+
+    def equip_txrx(self):
+        if self.tx:
+            return u'%s-%s' %(self.tx, self.rx)
+        else:
+            return u'%s-%s/%s-%s' %(self.tx_min, self.tx_max, self.rx_min, self.rx_max)            
+    equip_txrx.short_description = 'Transmit/Received'        
+
+    def equip_powerbwe(self):        
+        return u'%s %s / %s' %(self.power, self.unit, self.bwe)            
+    equip_powerbwe.short_description = 'Power / BWE'      
+
+    def equip_usagepolarity(self):      
+        return u'%s - %s' %(self.usage, self.polarity)
+    equip_usagepolarity.short_description = 'Usage/Polarity'
+
+
+
+    #def save(self, *args, **kwargs):
+    #    print 'sitename: ', self.sitename.id
+        #if self.sitename:
+        ##    curr_site = Sitename.objects.get(pk=self.sitename.id)
+        #   self.sitename = curr_site
+
+class EquipRack(models.Model):
+    logbook             = models.ForeignKey(LogBook)#, on_delete=models.SET_NULL)
+    equipment           = models.ForeignKey(Equipment)#, on_delete=models.SET_NULL)
+
+    class Meta:        
+        verbose_name_plural = "Equipment Racks"
+        verbose_name        = "Equipment Rack"
+
+    def equip_makemodel(self):        
+        return self.equipment.makemodel
+    equip_makemodel.short_description = 'Make/Model'
+
+    def equip_freqrange_low(self):        
+        return self.equipment.freqrange_low
+    equip_freqrange_low.short_description = 'Freq Range Low'
+
+    def equip_freqrange_high(self):        
+        return self.equipment.freqrange_high
+    equip_freqrange_high.short_description = 'Freq Range High'
+
+    def equip_power(self):        
+        return self.equipment.power
+    equip_power.short_description = 'Power'
+
+    def equip_bwe(self):        
+        return self.equipment.bwe
+    equip_bwe.short_description = 'BWE'
+
+    def equip_sn(self):        
+        return self.equipment.serialno
+    equip_sn.short_description = 'Serial No'
+
+    def equip_sitename(self):        
+        return self.equipment.sitename
+    equip_sitename.short_description = 'Sitename'
+
+    def save(self, *args, **kwargs):        
+    ## self.units
+        equipment  = Equipment.objects.filter(pk=self.equipment.id)      
+        logbook    = LogBook.objects.get(pk=self.logbook.id)
+        #print 'Enter Save in Equipment Rack'
+        for rec in equipment:
+            #print 'testing1:', rec.id
+            #print 'testing2: %s-%s' % (rec.makemodel_id, rec.serialno)
+            logbook.save()                                   
+        super(EquipRack, self).save(*args, **kwargs) # Call the "real" save() method.
+#ok!
+class LatestRsl_v2(models.Model):
+    id                  = models.AutoField(primary_key=True)
+    logbook             = models.ForeignKey(LogBook, null=True, blank= True, on_delete=models.SET_NULL)
+    official_receipt    = models.ManyToManyField(Official_Receipt, through='LatestRsl_v2_Official')  #manytomany
+    carrier             = models.ForeignKey(Carrier, null=True, blank= True, verbose_name ='Public Carrier', on_delete=models.PROTECT)        
+    sitename            = models.ForeignKey(Sitename,  null=True, blank= True, on_delete=models.SET_NULL)
+    equipment           = models.ManyToManyField(Equipment, through='LatestRsl_v2_Equipment')        #manytomany                
+    rslno               = models.CharField(max_length=50, blank=True, null=True, verbose_name="License No") ## auto number
+    issued              = models.DateField(null=True, verbose_name="Date Issued", blank=True) ## auto date    
+    form_serial         = models.DecimalField(null=True, verbose_name="Form Serial#", max_digits=10, decimal_places=0, blank=True)    # auto place   
+    status              = models.CharField(max_length=40, choices=SIMPLIFIED_TRANSACTION_TYPE, default=u'NEW', verbose_name='Status')        
+    class_of_station    = models.ForeignKey(Classofstation, null=True, blank= True, verbose_name="Class of Station", on_delete=models.SET_NULL)
+    nature_of_service   = models.CharField(max_length=20, blank=True, null=True, default=u'CP', verbose_name="Nature of Service")        
+    ptsvc               = models.CharField(max_length=300, blank=True, null=True, verbose_name="Point of Service") ## auto place
+    remarks             = models.CharField(max_length=2000, blank=True, null=True, verbose_name="Remarks")    
+    signatory           = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='rsl_approved_by', null=True, blank= True, verbose_name="Signed by Director", on_delete=models.SET_NULL)    ## auto place    
+    evaluator           = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='rsl_evaluated_by', null=True, blank= True, verbose_name="Evaluator" , on_delete=models.SET_NULL)    ## auto place
+    encoder             = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='rsl_encoded_by', null=True, blank= True, verbose_name="Encoder", on_delete=models.SET_NULL)    ## auto place
+    capacity            = models.CharField(max_length=100, blank=True, null=True, verbose_name="Capacity")
+   
+    class Meta:
+        #db_table            = u'latest_rsl'
+        verbose_name_plural = "Latest Radio Station Licenses"
+        verbose_name        = "Radio Station License"
+        ordering            = ["issued"]
+        permissions=(
+             ("rb_oview_rsl", "RB can only view RSL"),
+             ("sec_oview_rsl", "Secretary can only view RSL"),
+             ("encoder_oview_rsl", "Encoder can only view RSL"),
+             ("engr_oview_rsl", "Engr can only view RSL"),
+        )
+
+    def __unicode__(self):
+        return self.rslno
+    ''' to display foreign fields'''
+    
+    def lic_to_operate(self):
+        return self.class_of_station.description
+    lic_to_operate.short_description = 'License to Operate'
+    def sitename_street(self):        
+        return self.sitename.street
+    sitename_street.short_description = 'Street'
+    def sitename_city(self):
+        return self.sitename.address.city
+    sitename_city.short_description = 'City'
+    def sitename_province(self):
+        pass      
+        #return self.sitename.address.province 
+    sitename_province.short_description = 'Province'
+    def sitename_region(self):
+        return self.sitename.address.region
+    sitename_region.short_description = 'Region'
+
+    def equip_callsign(self):
+        return self.equipment.callsign
+    equip_callsign.short_description = 'Call-Sign'
+    def equip_serialno(self):
+        return self.equipment.serialno
+    equip_serialno.short_description = 'Serial No'
+
+    def sitename_longitude(self):
+        return self.sitename.longitude
+    sitename_longitude.short_description = 'Longitude'
+
+    def sitename_latitude(self):
+        return self.sitename.latitude
+    sitename_latitude.short_description = 'Latitude'
+
+class LatestRsl_v2_Official(models.Model): # Payments
+    latestrsl_v2        = models.ForeignKey(LatestRsl_v2, null=True)
+    official_receipt    = models.ForeignKey(Official_Receipt, null=True)
+
+    class Meta:
+        db_table            = u'ccad_latestrsl_v2_official4594'
+        verbose_name_plural = "Related Official Receipts"
+        verbose_name        = "Official Receipt for RSL"
+
+class Statements(models.Model):
+    logbook             = models.ForeignKey(LogBook, null=True)#, on_delete=models.SET_NULL)
+    soa                 = models.ForeignKey(SOA, null=True)#, on_delete=models.SET_NULL)
+
+    class Meta:        
+        verbose_name_plural = "Payments"
+        verbose_name        = "Payment"
+
+    def save(self, *args, **kwargs): 
+        ## self.units 
+        logbook = LogBook.objects.get(pk=self.logbook.id)
+        soa  = SOA.objects.filter(pk=self.soa.id)              
+        print 'Enter Save in Statements'
+        for rec in soa:
+            #print 'testing1:', rec.id
+            #print 'testing2:', rec.rsl_units 
+            check_if_mod = SOA_App_type.objects.select_related().filter(soa=rec.id, app_type=5).count()
+            #print 'check_if_mod :', check_if_mod
+            ## app type RECALL OK!
+            if rec.rsl_units == 0 and rec.ppp_units == 0 and rec.stor_units > 0:
+                logbook.units = rec.stor_units
+                print 'elif RECALL/STORAGE =0=0>0:', logbook.units
+            ## no units
+            elif rec.rsl_units == 0 and rec.ppp_units == 0 and rec.stor_units == 0 and rec.channel == 0:
+                logbook.units = 0
+                print 'elif no units =0=0=0=0:', logbook.units 
+            ## app type PPP OK!
+            elif rec.rsl_units == 0 and rec.ppp_units > 0 and rec.stor_units == 0 and rec.suf_fees == 0:                
+                logbook.units = rec.ppp_units
+                print 'elif PPP :=0>0=0', logbook.units 
+            ## app type RSL
+            elif rec.rsl_units > 0 and rec.channel == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                logbook.units = rec.rsl_units
+                print 'rec.rsl_units > 0=0:', rec.rsl_units
+            ## ?
+            elif rec.channel > 0 and rec.rsl_units == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                logbook.units = rec.rsl_units
+                print 'rec.channel > 0=0:', rec.channel
+            ## either channel or rsl_units is present
+            elif rec.channel > 0 and rec.rsl_units > 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                logbook.units = rec.channel
+                print 'either channel or rsl_units is present > 0>0:', rec.channel
+                      
+            ## app type MOD : combination of RSL, PPP and STORAGE OK!
+            elif  check_if_mod > 0:
+                logbook.units = rec.stor_units + rec.ppp_units
+                print 'elif check_if_mod:', logbook.units                       
+            ## self.noofstation
+            try:
+                station_list = SOA_detail.objects.filter(soa=rec.id)        
+                no_stations = station_list.count()
+                #print 'station_list.first(sitename) : ',  station_list.first()
+                #print 'station_list.last(sitename) : ',  station_list.last()
+                stn_first = station_list.first()
+                stn_last = station_list.last()
+                #print 'stn_first.sitename :', stn_first.sitename[:29]
+                logbook.first_stn =  stn_first.sitename[:29]
+                logbook.last_stn = stn_last.sitename[:29]
+                if no_stations:
+                    logbook.noofstation =no_stations
+                else:
+                    logbook.noofstation = 0
+            except:
+                # return default value
+                logbook.first_stn =  ''
+                logbook.last_stn = ''
+                logbook.noofstation = 0
+            ## self.service        
+            logbook.service = rec.service_type
+            ## self.transtype
+            soa_app_list = SOA_App_type.objects.select_related().filter(soa=rec.id)
+            #print 'soa_app_list :', soa_app_list
+            app_type_names = ''
+
+            for soap in soa_app_list:
+                #print 'inside for loop - soap.app_type.trans_type is :', soap.app_type.trans_type
+                #print 'app_type_names.rfind(ALL) :' , app_type_names.rfind('ALL')
+                #print 'app_type_names.rfind(PPP) :' , app_type_names.rfind('PPP')
+                #print 'app_type_names.rfind(RECALL) :' , app_type_names.rfind('RECALL')
+                ## limit app type name 
+                if app_type_names:
+                    ## if ALL is found
+                    if soap.app_type.trans_type == 'ALL':
+                        app_type_names = soap.app_type.trans_type
+                    ## if no ALL
+                    elif soap.app_type.trans_type != 'ALL' and app_type_names.rfind('ALL') == -1:
+                        #print 'if mod is found no need to place ppp, sto or recall'
+                        
+                        if app_type_names.rfind('MOD') >= 0 and (soap.app_type.trans_type == 'STO' \
+                            or soap.app_type.trans_type == 'RECALL' or soap.app_type.trans_type == 'PPP'):
+                            # Do nothing
+                            pass
+                            #print 'Not inserting STO, PPP, RECALL once MOD is found'
+                        elif soap.app_type.trans_type == 'MOD' and (app_type_names.rfind('PPP') >= 0 or app_type_names.rfind('STO') >= 0 or app_type_names.rfind('RECALL') >= 0):
+                            app_type_names = app_type_names.replace('PPP','').replace('STO','').replace('RECALL','') +' / '+ soap.app_type.trans_type                    
+                            #print 'app_type_names if mod/ppp: ', app_type_names
+                        else:
+                            app_type_names = soap.app_type.trans_type+' / '+app_type_names
+                            #print 'app_type_names with in else: ', app_type_names
+                else:
+                    app_type_names = soap.app_type.trans_type
+                    #print 'app_type_names outside else: ', app_type_names
+            
+            #print 'original app type name: ', app_type_names
+            clean_app_type_name = app_type_names.replace('/  /','/').replace('//','/')
+            if len(clean_app_type_name) >= 17:
+                logbook.transtype = 'ALL'
+            else:
+                logbook.transtype = clean_app_type_name
+            ## add app type in control No.
+            logbook.controlNo = logbook.controlNo[:13]+logbook.transtype
+            
+            logbook.save()
+        super(Statements, self).save(*args, **kwargs) # Call the "real" save() method.
+
+    def delete(self, *args, **kwargs):
+        #print 'return default value'
+        self.logbook.units = 0
+        self.logbook.service = ''
+        self.logbook.transtype = ''
+        self.logbook.first_stn =  ''
+        self.logbook.last_stn = ''
+        self.logbook.noofstation = 0
+        self.logbook.controlNo = self.logbook.controlNo[:13]             
+        self.logbook.save()
+        #print 'Setting to default value'
+        super(Statements, self).delete(*args, **kwargs)
+#ok!
+class LatestRsl_v2_Equipment(models.Model):
+    latestrsl_v2 = models.ForeignKey(LatestRsl_v2, null=True)#, on_delete=models.SET_NULL)
+    equipment    = models.ForeignKey(Equipment, null=True)#, on_delete=models.SET_NULL)
+
+    def equip_freqrange(self):        
+        return u'%s-%s' % (self.equipment.freqrange_low, self.equipment.freqrange_high)
+    equip_freqrange.short_description = 'Freq Range'
+
+    def equip_txrx(self):
+        if self.tx:
+            return u'%s-%s' %(self.equipment.tx, self.equipment.rx)
+        else:
+            return u'%s-%s/%s-%s' %(self.equipment.tx_min, self.equipment.tx_max, self.equipment.rx_min, self.equipment.rx_max)            
+    equip_txrx.short_description = 'Transmit/Received'        
+
+    def equip_powerbwe(self):        
+        return u'%s %s / %s' %(self.equipment.power, self.equipment.unit, self.equipment.bwe,)            
+    equip_powerbwe.short_description = 'Power / BWE'      
+
+    def equip_purchase(self):        
+        return self.equipment.purchase
+    equip_purchase.short_description = 'Purchase'  
+
+    def equip_possess(self):        
+        return self.equipment.possess
+    equip_possess.short_description = 'Possess'  
+
+    def equip_storage(self):        
+        return self.equipment.storage
+    equip_purchase.short_description = 'Storage'  
+
+    def equip_callsign(self):        
+        return self.equipment.callsign
+    equip_purchase.short_description = 'Call-Sign'
+
+    def equip_usagepolarity(self):      
+        return u'%s - %s' %(self.equipment.usage, self.equipment.polarity)
+    equip_usagepolarity.short_description = 'Usage/Polarity'  
+
+    def ant_details(self):
+        return u'%s : %s-%s-%s' % (self.equipment.antenna.antenna_type, self.equipment.antenna.directivity, self.equipment.antenna.gain, self.equipment.antenna.height)    
+
+    class Meta: 
+        db_table            = u'ccad_latestrsl_v2_equipment'     
+        verbose_name_plural = "Related Equipmentsss"
+        verbose_name        = "Equipment for RSL"
+
+class KPI(models.Model):
+    current_year = models.IntegerField(null=False, blank=False,  default=datetime.now().year)
+    target       = models.IntegerField(null=False, blank=False)
+
+    class Meta:   
+        verbose_name_plural = "Key Performance Indicators"
+        verbose_name        = "KPI"
+#ok!
+class MasterRsl(models.Model):
+    id              = models.AutoField(primary_key=True) 
+    status          = models.CharField(max_length=20, choices=STATUS_CHOICES, blank=True, null=True, verbose_name="Status")
+    rslno           = models.CharField(max_length=50, blank=True, null=True, verbose_name="License No")
+    issued          = models.DateField(null=True, verbose_name="Date Issued", blank=True)
+    carrier         = models.CharField(max_length=150, blank=True, null=True, verbose_name="Carrier")
+    site            = models.CharField(max_length=300, blank=True, null=True, verbose_name="Site")
+    street          = models.CharField(max_length=150, blank=True, null=True, verbose_name="Street")
+    city            = models.CharField(max_length=150, blank=True, null=True, verbose_name="Town/City")
+    province        = models.CharField(max_length=150, blank=True, null=True, verbose_name="Province")
+    region          = models.CharField(max_length=50, blank=True, null=True, verbose_name="Region")
+    deg_long        = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    min_long        = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    sec_long        = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    longitude       = models.CharField(max_length=50, blank=True, null=True, verbose_name="Longitude")
+    deg_lat         = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    min_lat         = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    sec_lat         = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    latitude        = models.CharField(max_length=50, blank=True, null=True, verbose_name="Latitude")
+    lic_to_operate  = models.CharField(max_length=50, blank=True, null=True, verbose_name="License to Operate")
+    class_of_station = models.CharField(max_length=20, blank=True, null=True, verbose_name="Class of Station")
+    nature_of_service = models.CharField(max_length=20, blank=True, null=True, verbose_name="Nature of Service")
+    callsign        = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign")
+    ptsvc           = models.CharField(max_length=150, blank=True, null=True, verbose_name="Point of Service")
+    ptsvc_callsign  = models.CharField(max_length=150, blank=True, null=True)
+    tx1             = models.CharField(max_length=50, blank=True, null=True)
+    tx2             = models.CharField(max_length=50, blank=True, null=True)
+    tx3             = models.CharField(max_length=50, blank=True, null=True)
+    tx4             = models.CharField(max_length=50, blank=True, null=True)
+    tx5             = models.CharField(max_length=50, blank=True, null=True)
+    tx6             = models.CharField(max_length=50, blank=True, null=True)
+    tx7             = models.CharField(max_length=50, blank=True, null=True)
+    tx8             = models.CharField(max_length=50, blank=True, null=True)
+    tx9             = models.CharField(max_length=50, blank=True, null=True)
+    tx10            = models.CharField(max_length=50, blank=True, null=True)
+    tx11            = models.CharField(max_length=50, blank=True, null=True)
+    tx12            = models.CharField(max_length=50, blank=True, null=True)
+    rx1             = models.CharField(max_length=50, blank=True, null=True)
+    rx2             = models.CharField(max_length=50, blank=True, null=True)
+    rx3             = models.CharField(max_length=50, blank=True, null=True)
+    rx4             = models.CharField(max_length=50, blank=True, null=True)
+    rx5             = models.CharField(max_length=50, blank=True, null=True)
+    rx6             = models.CharField(max_length=50, blank=True, null=True)
+    rx7             = models.CharField(max_length=50, blank=True, null=True)
+    rx8             = models.CharField(max_length=50, blank=True, null=True)
+    rx9             = models.CharField(max_length=50, blank=True, null=True)
+    rx10            = models.CharField(max_length=50, blank=True, null=True)
+    rx11            = models.CharField(max_length=50, blank=True, null=True)
+    rx12            = models.CharField(max_length=50, blank=True, null=True)
+    tx1_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx2_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx3_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx4_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx5_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx6_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx7_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx8_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx9_min             = models.CharField(max_length=50, blank=True, null=True)
+    tx10_min            = models.CharField(max_length=50, blank=True, null=True)
+    tx11_min            = models.CharField(max_length=50, blank=True, null=True)
+    tx12_min            = models.CharField(max_length=50, blank=True, null=True)
+    rx1_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx2_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx3_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx4_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx5_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx6_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx7_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx8_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx9_min             = models.CharField(max_length=50, blank=True, null=True)
+    rx10_min            = models.CharField(max_length=50, blank=True, null=True)
+    rx11_min            = models.CharField(max_length=50, blank=True, null=True)
+    rx12_min            = models.CharField(max_length=50, blank=True, null=True)
+    tx1_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx2_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx3_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx4_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx5_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx6_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx7_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx8_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx9_max             = models.CharField(max_length=50, blank=True, null=True)
+    tx10_max            = models.CharField(max_length=50, blank=True, null=True)
+    tx11_max            = models.CharField(max_length=50, blank=True, null=True)
+    tx12_max            = models.CharField(max_length=50, blank=True, null=True)
+    rx1_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx2_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx3_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx4_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx5_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx6_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx7_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx8_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx9_max             = models.CharField(max_length=50, blank=True, null=True)
+    rx10_max            = models.CharField(max_length=50, blank=True, null=True)
+    rx11_max            = models.CharField(max_length=50, blank=True, null=True)
+    rx12_max            = models.CharField(max_length=50, blank=True, null=True)
+    bwe_1           = models.CharField(max_length=50, blank=True, null=True, verbose_name="Bandwidth")
+    no              = models.CharField(max_length=50, blank=True, null=True)
+    unit            = models.CharField(max_length=10, blank=True, null=True)
+    power           = models.CharField(max_length=100, blank=True, null=True, verbose_name="Power")
+    a1std           = models.CharField(max_length=10, blank=True, null=True)
+    a2ndd           = models.CharField(max_length=10, blank=True, null=True)
+    a3rdd           = models.CharField(max_length=10, blank=True, null=True)
+    a4th            = models.CharField(max_length=10, blank=True, null=True)
+    a5th            = models.CharField(max_length=10, blank=True, null=True)
+    a6th            = models.CharField(max_length=10, blank=True, null=True)
+    dir             = models.CharField(max_length=50, blank=True, null=True, verbose_name="Directivity")
+    a1sth           = models.CharField(max_length=10, blank=True, null=True)
+    a2ndh           = models.CharField(max_length=10, blank=True, null=True)
+    a3rdh           = models.CharField(max_length=10, blank=True, null=True)
+    h               = models.CharField(max_length=50, blank=True, null=True, verbose_name="Height from Ground")
+    gain            = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    gain2           = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    gain3           = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    gn              = models.CharField(max_length=100, blank=True, null=True, verbose_name="Gain")
+    t               = models.CharField(max_length=100, blank=True, null=True, verbose_name="Antenna Type")
+    make            = models.CharField(max_length=150, blank=True, null=True, verbose_name="Make/Model")
+    spare_equip_serial  = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip")
+    spare_equip_serial2 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip2")
+    spare_equip_serial3 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip3")
+    sn1             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#1")
+    sn2             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#2")
+    sn3             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#3")
+    sn4             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#4")
+    sn5             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#5")
+    sn6             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#6")
+    sn7             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#7")
+    sn8             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#8")
+    sn9             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#9")
+    sn10            = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#10")
+    sn11            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#11")
+    sn12            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#12")
+    sn13            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#13")
+    sn14            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#14")
+    sn15            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#15")
+    sn16            = models.CharField(max_length=17, blank=True, null=True, verbose_name="Serial No#16")
+    sn17            = models.CharField(max_length=17, blank=True, null=True, verbose_name="Serial No#17")
+    sn18            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#18")
+    sn19            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#19")
+    sn20            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#20")
+    sn21            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#21")
+    sn22            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#22")
+    sn23            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#23")
+    sn24            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#24")
+    freqrange       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Freq Range")
+    validity_from   = models.DateField(null=True, verbose_name="Valid from", blank=True)
+    validity_to     = models.DateField(null=True, verbose_name="Valid until", blank=True)
+    extension       = models.DateField(null=True, verbose_name="Extended Until", blank=True)
+    remarks         = models.CharField(max_length=2000, blank=True, null=True, verbose_name="Remarks")
+    or_no           = models.DecimalField(null=True, verbose_name="Official Receipt #1", max_digits=10, decimal_places=0, blank=True)
+    date_paid       = models.DateField(null=True, verbose_name="Date Paid", blank=True)
+    amount          = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
+    or_no2          = models.DecimalField(null=True, verbose_name="Official Receipt #2", max_digits=10, decimal_places=0, blank=True)
+    date_paid2      = models.DateField(null=True, verbose_name="Date Paid", blank=True)
+    amount2         = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
+    encoder         = models.CharField(max_length=50, blank=True, null=True, verbose_name="Encoder")
+    evaluator       = models.CharField(max_length=50, blank=True, null=True, verbose_name="Evaluator")
+    signatory       = models.CharField(max_length=50, blank=True, null=True, verbose_name="Signed by Director" )
+    form_serial     = models.DecimalField(null=True, verbose_name="Form Serial#", max_digits=10, decimal_places=0, blank=True)
+    remarks_2       = models.CharField(max_length=300, blank=True, null=True, verbose_name="Other Remarks")
+    dst             = models.CharField(max_length=20, blank=True, null=True, default='DST Paid', verbose_name="Documentary Stamp")
+    sitename_id     = models.DecimalField(max_digits=10, decimal_places=0)
+    cashierstamp_id = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    carrier_id      = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    makemodel_id    = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    freqrange_id    = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    equip_used      = models.CharField(max_length=20, blank=True, null=True)
+    encoder_id      = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    evaluator_id    = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    polarity1       = models.CharField(max_length=20, blank=True, null=True)
+    polarity2       = models.CharField(max_length=20, blank=True, null=True)
+    polarity3       = models.CharField(max_length=20, blank=True, null=True)
+    polarity4       = models.CharField(max_length=20, blank=True, null=True)
+    polarity5       = models.CharField(max_length=20, blank=True, null=True)
+    polarity6       = models.CharField(max_length=20, blank=True, null=True)
+    polarity7       = models.CharField(max_length=20, blank=True, null=True)
+    polarity8       = models.CharField(max_length=20, blank=True, null=True)
+    polarity9       = models.CharField(max_length=20, blank=True, null=True)
+    polarity10      = models.CharField(max_length=20, blank=True, null=True)
+    polarity11      = models.CharField(max_length=20, blank=True, null=True)
+    polarity12      = models.CharField(max_length=20, blank=True, null=True)
+    polarity13      = models.CharField(max_length=20, blank=True, null=True)
+    polarity14      = models.CharField(max_length=20, blank=True, null=True)    
+   
+    tx13            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx14            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx15            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx16            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx17            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx18            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx19            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx20            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx21            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx22            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
+    rx13            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx14            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx15            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx16            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx17            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx18            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx19            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx20            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx21            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx22            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx13_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx14_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx15_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx16_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx17_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx18_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx19_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx20_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx21_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx22_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx13_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx14_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx15_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx16_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx17_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx18_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx19_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx20_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx21_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx22_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx13_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx14_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx15_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx16_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx17_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx18_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx19_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx20_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx21_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx22_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx13_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx14_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx15_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx16_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx17_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx18_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx19_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx20_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx21_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx22_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx23            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx24            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx25            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx26            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx27            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx28            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx29            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx30            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx31            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx32            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx33            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx34            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx35            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx36            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    rx23            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx24            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx25            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx26            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx27            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx28            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx29            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx30            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx31            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx32            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx33            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx34            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx35            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx36            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx23_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx24_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx25_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx26_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx27_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx28_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx29_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx30_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx31_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx32_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx33_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx34_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx35_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx36_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    rx23_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx24_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx25_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx26_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx27_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx28_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx29_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx30_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx31_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx32_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx33_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx34_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx35_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx36_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx23_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx24_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx25_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx26_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx27_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx28_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx29_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx30_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx31_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx32_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx33_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx34_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx35_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx36_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    rx23_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx24_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx25_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx26_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx27_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx28_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx29_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx30_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx31_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx32_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx33_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx34_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx35_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx36_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    callsign1       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign1")
+    callsign2       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign2")
+    callsign3       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign3")
+    callsign4       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign4")
+    callsign5       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign5")
+    callsign6       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign6")
+    callsign7       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign7")
+    callsign8       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign8")
+    callsign9       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign9")
+    callsign10      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign10")
+    callsign11      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign11")
+    callsign12      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign12")
+    callsign13      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign13")
+    callsign14      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign14")
+    callsign15      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign15")
+    callsign16      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign16")
+    callsign17      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign17")
+    callsign18      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign18")
+    callsign19      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign19")
+    callsign20      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign20")
+    callsign21      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign21")
+    callsign22      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign22")
+    callsign23      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign23")
+    callsign24      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign24")
+
+    old_callsign1       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign1")
+    old_callsign2       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign2")
+    old_callsign3       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign3")
+    old_callsign4       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign4")
+    old_callsign5       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign5")
+    old_callsign6       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign6")
+    old_callsign7       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign7")
+    old_callsign8       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign8")
+    old_callsign9       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign9")
+    old_callsign10      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign10")
+    old_callsign11      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign11")
+    old_callsign12      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign12")
+    old_callsign13      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign13")
+    old_callsign14      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign14")
+    old_callsign15      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign15")
+    old_callsign16      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign16")
+    old_callsign17      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign17")
+    old_callsign18      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign18")
+    old_callsign19      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign19")
+    old_callsign20      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign20")
+    old_callsign21      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign21")
+    old_callsign22      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign22")
+    old_callsign23      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign23")
+    old_callsign24      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign24")
+
+    purchase_sp1    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase Spare 1")
+    purchase_sp2    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase Spare 2")
+    purchase_sp3    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase Spare 3")
+
+    possess_sp1    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess Share 1")
+    possess_sp2    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess Share 2")
+    possess_sp3    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess Share 3")
+
+    storage_sp1    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage Share 1")
+    storage_sp2    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage Share 2")
+    storage_sp3    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage Share 3")
+
+    purchase1      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 1")
+    purchase2      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 2")
+    purchase3      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 3")
+    purchase4      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 4")
+    purchase5      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 5")
+    purchase6      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 6")
+    purchase7      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 7")
+    purchase8      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 8")
+    purchase9      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 9")
+    purchase10     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 10")
+    purchase11     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 11")
+    purchase12     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 12")
+    purchase13     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 13")
+    purchase14     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 14")
+    purchase15     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 15")
+    purchase16     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 16")
+    purchase17     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 17")
+    purchase18     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 18")
+    purchase19     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 19")
+    purchase20     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 20")
+    purchase21     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 21")
+    purchase22     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 22")
+    purchase23     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 23")
+    purchase24     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 24")
+
+    possess1      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 1")
+    possess2      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 2")
+    possess3      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 3")
+    possess4      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 4")
+    possess5      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 5")
+    possess6      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 6")
+    possess7      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 7")
+    possess8      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 8")
+    possess9      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 9")
+    possess10     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 10")
+    possess11     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 11")
+    possess12     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 12")
+    possess13     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 13")
+    possess14     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 14")
+    possess15     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 15")
+    possess16     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 16")
+    possess17     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 17")
+    possess18     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 18")
+    possess19     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 19")
+    possess20     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 20")
+    possess21     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 21")
+    possess22     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 22")
+    possess23     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 23")
+    possess24     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 24")
+
+    old_serial_no_1  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 1")
+    old_serial_no_2  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 2")
+    old_serial_no_3  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 3")
+    old_serial_no_4  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 4")
+    old_serial_no_5  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 5")
+    old_serial_no_6  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 6")
+    old_serial_no_7  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 7")
+    old_serial_no_8  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 8")
+    old_serial_no_9  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 9")
+    old_serial_no_10 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 10")
+    old_serial_no_11 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 11")
+    old_serial_no_12 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 12")
+    old_serial_no_13 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 13")
+    old_serial_no_14 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 14")
+    old_serial_no_15 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 15")
+    old_serial_no_16 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 16")
+    old_serial_no_17 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 17")
+    old_serial_no_18 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 18")
+    old_serial_no_19 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 19")
+    old_serial_no_20 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 20")
+    old_serial_no_21 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 21")
+    old_serial_no_22 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 22")
+    old_serial_no_23 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 23")
+    old_serial_no_24 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 24")
+
+    storage1      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 1")
+    storage2      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 2")
+    storage3      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 3")
+    storage4      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 4")
+    storage5      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 5")
+    storage6      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 6")
+    storage7      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 7")
+    storage8      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 8")
+    storage9      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 9")
+    storage10     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 10")
+    storage11     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 11")
+    storage12     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 12")
+    storage13     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 13")
+    storage14     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 14")
+    storage15     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 15")
+    storage16     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 16")
+    storage17     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 17")
+    storage18     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 18")
+    storage19     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 19")
+    storage20     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 20")
+    storage21     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 21")
+    storage22     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 22")
+    storage23     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 23")
+    storage24     = models.CharField(max_length=100, blank=True, null=True, verbose_name="storage 24")
+
+    polarity15    = models.CharField(max_length=20, blank=True, null=True)
+    polarity16    = models.CharField(max_length=20, blank=True, null=True)
+    polarity17    = models.CharField(max_length=20, blank=True, null=True)
+    polarity18    = models.CharField(max_length=20, blank=True, null=True)
+    polarity19    = models.CharField(max_length=20, blank=True, null=True)
+    polarity20    = models.CharField(max_length=20, blank=True, null=True)
+    polarity21    = models.CharField(max_length=20, blank=True, null=True)
+    polarity22    = models.CharField(max_length=20, blank=True, null=True)
+    polarity23    = models.CharField(max_length=20, blank=True, null=True)
+    polarity24    = models.CharField(max_length=20, blank=True, null=True) 
+
+    old_serial_no_sp1 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 1") 
+    old_serial_no_sp2 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 2")
+    old_serial_no_sp3 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 3") 
+
+    old_make_1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model1")
+    old_make_2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model2")
+    old_make_3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model3")
+    old_make_4    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model4")
+    old_make_5    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model5")
+    old_make_6    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model6")
+    old_make_7    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model7")
+    old_make_8    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model8")
+    old_make_9    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model9")
+    old_make_10   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model10")
+    old_make_11   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model11")
+    old_make_12   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model12")
+    old_make_13    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model13")
+    old_make_14    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model14")
+    old_make_15    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model15")
+    old_make_16    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model16")
+    old_make_17    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model17")
+    old_make_18    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model18")
+    old_make_19    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model19")
+    old_make_20    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model20")
+    old_make_21    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model21")
+    old_make_22    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model22")
+    old_make_23    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model23")
+    old_make_24    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model24")
+    old_make_SP1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp1")
+    old_make_SP2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp2")
+    old_make_SP3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp3")
+
+    capacity      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Capacity")
+
+    tx37            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx38            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx39            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx40            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx41            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx42            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+  
+    rx37            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx38            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx39            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx40            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx41            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx37_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx38_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx39_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx40_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx41_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx42_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx37_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx38_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx39_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx40_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx41_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx37_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx38_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx39_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx40_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx41_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx37_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx38_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx39_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx40_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx41_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    philaddress   = models.ForeignKey(PhilAddress,  blank=True, null=True, on_delete=models.SET_NULL)
+    carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL)  
+
+    class Meta:
+        db_table            = u'master_rsl'
+        verbose_name_plural = "Master RSL"
+        ordering            = ["issued"]
+    def __unicode__(self):
+        return self.rslno
+#ok!
+class LatestRsl(models.Model):
+    id              = models.AutoField(primary_key=True)  #id              = models.DecimalField(primary_key=True, decimal_places=0, max_digits=10)
+    logbook         = models.ForeignKey(LogBook, null=True, blank= True)
+    status          = models.CharField(max_length=20, blank=True, null=True, verbose_name="Status")
+    rslno           = models.CharField(max_length=50, blank=True, null=True, verbose_name="License No")
+    issued          = models.DateField(null=True, verbose_name="Date Issued", blank=True)
+    carrier         = models.CharField(max_length=150, blank=True, null=True, verbose_name="Carrier", choices=CARRIER_LIST)
+    site            = models.CharField(max_length=300, blank=True, null=True, verbose_name="Site")
+    street          = models.CharField(max_length=150, blank=True, null=True, verbose_name="Street")
+    city            = models.CharField(max_length=150, blank=True, null=True, verbose_name="Town/City", choices=CITY_LIST)
+    province        = models.CharField(max_length=150, blank=True, null=True, verbose_name="Province", choices=PROVINCE_LIST)
+    region          = models.CharField(max_length=50, blank=True, null=True, verbose_name="Region", choices=REGION_CODE)
+    deg_long        = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    min_long        = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    sec_long        = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    longitude       = models.CharField(max_length=50, blank=True, null=True, verbose_name="Longitude")
+    deg_lat         = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    min_lat         = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    sec_lat         = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    latitude        = models.CharField(max_length=50, blank=True, null=True, verbose_name="Latitude")
+    lic_to_operate  = models.CharField(max_length=50, blank=True, null=True, verbose_name="License to Operate")
+    class_of_station = models.CharField(max_length=20, blank=True, null=True, verbose_name="Class of Station", choices=CLASS_OF_STATION_LIST)
+    nature_of_service = models.CharField(max_length=20, blank=True, null=True, verbose_name="Nature of Service", default='CP')
+    callsign        = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign")
+    ptsvc           = models.CharField(max_length=300, blank=True, null=True, verbose_name="Point of Service")
+    ptsvc_callsign  = models.CharField(max_length=150, blank=True, null=True)
+    tx1             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx2             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx3             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx4             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx5             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx6             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx7             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx8             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx9             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx10            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx11            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx12            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx1             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx2             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx3             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx4             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx5             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx6             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx7             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx8             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx9             =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx10            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx11            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx12            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx1_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx2_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx3_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx4_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx5_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx6_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx7_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx8_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx9_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx10_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx11_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx12_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx1_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx2_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx3_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx4_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx5_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx6_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx7_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx8_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx9_min         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx10_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx11_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx12_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx1_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx2_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx3_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx4_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx5_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx6_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx7_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx8_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx9_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx10_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx11_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx12_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx1_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx2_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx3_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx4_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx5_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx6_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx7_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx8_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx9_max         =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx10_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx11_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx12_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    bwe_1           = models.CharField(max_length=50, blank=True, null=True, verbose_name="Bandwidth")
+    no              = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    unit            = models.CharField(max_length=10, blank=True, null=True)
+    power           = models.CharField(max_length=100, blank=True, null=True, verbose_name="Power")
+    a1std           = models.CharField(max_length=10, blank=True, null=True)
+    a2ndd           = models.CharField(max_length=10, blank=True, null=True)
+    a3rdd           = models.CharField(max_length=10, blank=True, null=True)
+    a4th            = models.CharField(max_length=10, blank=True, null=True)
+    a5th            = models.CharField(max_length=10, blank=True, null=True)
+    a6th            = models.CharField(max_length=10, blank=True, null=True)
+    dir             = models.CharField(max_length=50, blank=True, null=True, verbose_name="Directivity")
+    a1sth           = models.CharField(max_length=10, blank=True, null=True)
+    a2ndh           = models.CharField(max_length=10, blank=True, null=True)
+    a3rdh           = models.CharField(max_length=10, blank=True, null=True)
+    h               = models.CharField(max_length=50, blank=True, null=True, verbose_name="Height from Ground")
+    gain            = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    gain2           = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    gain3           = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    gn              = models.CharField(max_length=100, blank=True, null=True, verbose_name="Gain")
+    t               = models.CharField(max_length=100, blank=True, null=True, verbose_name="Antenna Type")
+    make            = models.CharField(max_length=150, blank=True, null=True, verbose_name="Make/Model")
+    spare_equip_serial = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip")
+    spare_equip_serial2 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip2")
+    spare_equip_serial3 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip3")
+    sn1             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#1")
+    sn2             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#2")
+    sn3             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#3")
+    sn4             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#4")
+    sn5             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#5")
+    sn6             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#6")
+    sn7             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#7")
+    sn8             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#8")
+    sn9             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#9")
+    sn10            = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#10")
+    sn11            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#11")
+    sn12            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#12")
+    sn13            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#13")
+    sn14            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#14")
+    sn15            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#15")
+    sn16            = models.CharField(max_length=17, blank=True, null=True, verbose_name="Serial No#16")
+    sn17            = models.CharField(max_length=17, blank=True, null=True, verbose_name="Serial No#17")
+    sn18            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#18")
+    sn19            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#19")
+    sn20            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#20")
+    sn21            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#21")
+    sn22            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#22")
+    sn23            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#23")
+    sn24            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#24")
+    freqrange       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Freq Range")
+    validity_from   = models.DateField(null=True, verbose_name="Valid from", blank=True)
+    validity_to     = models.DateField(null=True, verbose_name="Valid until", blank=True)
+    extension       = models.DateField(null=True, verbose_name="Extended Until", blank=True)
+    remarks         = models.CharField(max_length=2000, blank=True, null=True, verbose_name="Remarks")
+    or_no           = models.DecimalField(null=True, verbose_name="Official Receipt #1", max_digits=10, decimal_places=0, blank=True)
+    date_paid       = models.DateField(null=True, verbose_name="Date Paid", blank=True)
+    amount          = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
+    or_no2          = models.DecimalField(null=True, verbose_name="Official Receipt #2", max_digits=10, decimal_places=0, blank=True)
+    date_paid2      = models.DateField(null=True, verbose_name="Date Paid", blank=True)
+    amount2         = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
+   
+    or_no3          = models.DecimalField(null=True, verbose_name="Official Receipt #3", max_digits=10, decimal_places=0, blank=True)
+    date_paid3      = models.DateField(null=True, verbose_name="Date Paid", blank=True)
+    amount3         = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
+    updater         = models.CharField(max_length=50, blank=True, null=True, verbose_name="Updated by")
+    encoder         = models.CharField(max_length=50, blank=True, null=True, verbose_name="Encoder", choices=ENCODER)
+    evaluator       = models.CharField(max_length=50, blank=True, null=True, verbose_name="Evaluator", choices=EVALUATOR)
+    signatory       = models.CharField(max_length=50, blank=True, null=True, verbose_name="Signed by Director", choices=DIRECTORS)
+    form_serial     = models.DecimalField(null=True, verbose_name="Form Serial#", max_digits=10, decimal_places=0, blank=True)
+    remarks_2       = models.CharField(max_length=300, blank=True, null=True, verbose_name="Other Remarks")
+    dst             = models.CharField(max_length=20, blank=True, null=True, verbose_name="Documentary Stamp")
+    sitename_id     = models.DecimalField(max_digits=10, decimal_places=0)
+    cashierstamp_id = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    carrier_id      = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    makemodel_id    = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    freqrange_id    = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    equip_used      = models.CharField(max_length=20, blank=True, null=True)
+    encoder_id      = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    evaluator_id    = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    polarity1       = models.CharField(max_length=20, blank=True, null=True)
+    polarity2       = models.CharField(max_length=20, blank=True, null=True)
+    polarity3       = models.CharField(max_length=20, blank=True, null=True)
+    polarity4       = models.CharField(max_length=20, blank=True, null=True)
+    polarity5       = models.CharField(max_length=20, blank=True, null=True)
+    polarity6       = models.CharField(max_length=20, blank=True, null=True)
+    polarity7       = models.CharField(max_length=20, blank=True, null=True)
+    polarity8       = models.CharField(max_length=20, blank=True, null=True)
+    polarity9       = models.CharField(max_length=20, blank=True, null=True)
+    polarity10      = models.CharField(max_length=20, blank=True, null=True)
+    polarity11      = models.CharField(max_length=20, blank=True, null=True)
+    polarity12      = models.CharField(max_length=20, blank=True, null=True)
+    polarity13      = models.CharField(max_length=20, blank=True, null=True)
+    polarity14      = models.CharField(max_length=20, blank=True, null=True)    
+   
+    tx13            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx14            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx15            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx16            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx17            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx18            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx19            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx20            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx21            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx22            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
+    rx13            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx14            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx15            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx16            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx17            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx18            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx19            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx20            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx21            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx22            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx13_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx14_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx15_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx16_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx17_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx18_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx19_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx20_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx21_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx22_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx13_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx14_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx15_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx16_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx17_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx18_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx19_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx20_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx21_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx22_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx13_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx14_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx15_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx16_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx17_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx18_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx19_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx20_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx21_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx22_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx13_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx14_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx15_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx16_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx17_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx18_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx19_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx20_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx21_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx22_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx23            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx24            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx25            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx26            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx27            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx28            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx29            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx30            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx31            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx32            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx33            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx34            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx35            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx36            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    rx23            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx24            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx25            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx26            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx27            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx28            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx29            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx30            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx31            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx32            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx33            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx34            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx35            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx36            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx23_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx24_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx25_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx26_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx27_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx28_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx29_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx30_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx31_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx32_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx33_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx34_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx35_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx36_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    rx23_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx24_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx25_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx26_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx27_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx28_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx29_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx30_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx31_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx32_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx33_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx34_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx35_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx36_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx23_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx24_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx25_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx26_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx27_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx28_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx29_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx30_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx31_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx32_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx33_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx34_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx35_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx36_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    rx23_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx24_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx25_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx26_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx27_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx28_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx29_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx30_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx31_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx32_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx33_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx34_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx35_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx36_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    callsign1       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign1")
+    callsign2       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign2")
+    callsign3       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign3")
+    callsign4       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign4")
+    callsign5       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign5")
+    callsign6       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign6")
+    callsign7       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign7")
+    callsign8       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign8")
+    callsign9       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign9")
+    callsign10      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign10")
+    callsign11      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign11")
+    callsign12      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign12")
+    callsign13      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign13")
+    callsign14      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign14")
+    callsign15      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign15")
+    callsign16      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign16")
+    callsign17      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign17")
+    callsign18      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign18")
+    callsign19      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign19")
+    callsign20      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign20")
+    callsign21      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign21")
+    callsign22      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign22")
+    callsign23      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign23")
+    callsign24      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Call-Sign24")
+
+    old_callsign1       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign1")
+    old_callsign2       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign2")
+    old_callsign3       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign3")
+    old_callsign4       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign4")
+    old_callsign5       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign5")
+    old_callsign6       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign6")
+    old_callsign7       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign7")
+    old_callsign8       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign8")
+    old_callsign9       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign9")
+    old_callsign10      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign10")
+    old_callsign11      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign11")
+    old_callsign12      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign12")
+    old_callsign13      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign13")
+    old_callsign14      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign14")
+    old_callsign15      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign15")
+    old_callsign16      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign16")
+    old_callsign17      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign17")
+    old_callsign18      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign18")
+    old_callsign19      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign19")
+    old_callsign20      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign20")
+    old_callsign21      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign21")
+    old_callsign22      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign22")
+    old_callsign23      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign23")
+    old_callsign24      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Call-Sign24")
+
+    purchase_sp1    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase Spare 1")
+    purchase_sp2    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase Spare 2")
+    purchase_sp3    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase Spare 3")
+
+    possess_sp1    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess Share 1")
+    possess_sp2    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess Share 2")
+    possess_sp3    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess Share 3")
+
+    storage_sp1    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage Share 1")
+    storage_sp2    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage Share 2")
+    storage_sp3    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage Share 3")
+    
+    purchase1      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 1")
+    purchase2      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 2")
+    purchase3      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 3")
+    purchase4      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 4")
+    purchase5      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 5")
+    purchase6      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 6")
+    purchase7      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 7")
+    purchase8      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 8")
+    purchase9      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 9")
+    purchase10     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 10")
+    purchase11     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 11")
+    purchase12     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 12")
+    purchase13     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 13")
+    purchase14     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 14")
+    purchase15     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 15")
+    purchase16     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 16")
+    purchase17     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 17")
+    purchase18     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 18")
+    purchase19     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 19")
+    purchase20     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 20")
+    purchase21     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 21")
+    purchase22     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 22")
+    purchase23     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 23")
+    purchase24     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase 24")
+
+    possess1      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 1")
+    possess2      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 2")
+    possess3      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 3")
+    possess4      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 4")
+    possess5      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 5")
+    possess6      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 6")
+    possess7      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 7")
+    possess8      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 8")
+    possess9      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 9")
+    possess10     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 10")
+    possess11     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 11")
+    possess12     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 12")
+    possess13     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 13")
+    possess14     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 14")
+    possess15     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 15")
+    possess16     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 16")
+    possess17     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 17")
+    possess18     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 18")
+    possess19     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 19")
+    possess20     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 20")
+    possess21     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 21")
+    possess22     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 22")
+    possess23     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 23")
+    possess24     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess 24")
+
+    old_serial_no_1  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 1")
+    old_serial_no_2  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 2")
+    old_serial_no_3  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 3")
+    old_serial_no_4  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 4")
+    old_serial_no_5  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 5")
+    old_serial_no_6  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 6")
+    old_serial_no_7  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 7")
+    old_serial_no_8  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 8")
+    old_serial_no_9  =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 9")
+    old_serial_no_10 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 10")
+    old_serial_no_11 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 11")
+    old_serial_no_12 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 12")
+    old_serial_no_13 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 13")
+    old_serial_no_14 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 14")
+    old_serial_no_15 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 15")
+    old_serial_no_16 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 16")
+    old_serial_no_17 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 17")
+    old_serial_no_18 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 18")
+    old_serial_no_19 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 19")
+    old_serial_no_20 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 20")
+    old_serial_no_21 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 21")
+    old_serial_no_22 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 22")
+    old_serial_no_23 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 23")
+    old_serial_no_24 =models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Serial No 24")
+
+    storage1      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 1")
+    storage2      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 2")
+    storage3      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 3")
+    storage4      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 4")
+    storage5      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 5")
+    storage6      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 6")
+    storage7      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 7")
+    storage8      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 8")
+    storage9      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 9")
+    storage10     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 10")
+    storage11     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 11")
+    storage12     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 12")
+    storage13     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 13")
+    storage14     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 14")
+    storage15     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 15")
+    storage16     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 16")
+    storage17     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 17")
+    storage18     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 18")
+    storage19     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 19")
+    storage20     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 20")
+    storage21     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 21")
+    storage22     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 22")
+    storage23     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage 23")
+    storage24     = models.CharField(max_length=100, blank=True, null=True, verbose_name="storage 24")
+
+    polarity15    = models.CharField(max_length=20, blank=True, null=True)
+    polarity16    = models.CharField(max_length=20, blank=True, null=True)
+    polarity17    = models.CharField(max_length=20, blank=True, null=True)
+    polarity18    = models.CharField(max_length=20, blank=True, null=True)
+    polarity19    = models.CharField(max_length=20, blank=True, null=True)
+    polarity20    = models.CharField(max_length=20, blank=True, null=True)
+    polarity21    = models.CharField(max_length=20, blank=True, null=True)
+    polarity22    = models.CharField(max_length=20, blank=True, null=True)
+    polarity23    = models.CharField(max_length=20, blank=True, null=True)
+    polarity24    = models.CharField(max_length=20, blank=True, null=True) 
+
+    old_serial_no_sp1 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 1") 
+    old_serial_no_sp2 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 2")
+    old_serial_no_sp3 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 3")
+
+    tx37            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx38            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx39            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx40            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx41            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx42            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+  
+    rx37            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx38            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx39            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx40            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx41            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42            =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx37_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx38_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx39_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx40_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx41_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx42_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx37_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx38_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx39_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx40_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx41_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_min        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+
+    tx37_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx38_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx39_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx40_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx41_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    tx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    
+    rx37_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx38_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx39_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx40_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx41_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    rx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True) 
+    
+    capacity      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Capacity")
+
+    old_make_1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model1")
+    old_make_2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model2")
+    old_make_3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model3")
+    old_make_4    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model4")
+    old_make_5    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model5")
+    old_make_6    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model6")
+    old_make_7    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model7")
+    old_make_8    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model8")
+    old_make_9    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model9")
+    old_make_10   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model10")
+    old_make_11   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model11")
+    old_make_12   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model12")
+    old_make_13    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model13")
+    old_make_14    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model14")
+    old_make_15    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model15")
+    old_make_16    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model16")
+    old_make_17    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model17")
+    old_make_18    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model18")
+    old_make_19    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model19")
+    old_make_20    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model20")
+    old_make_21    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model21")
+    old_make_22    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model22")
+    old_make_23    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model23")
+    old_make_24    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model24")
+    old_make_SP1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp1")
+    old_make_SP2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp2")
+    old_make_SP3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp3") 
+   
+    philaddress   = models.ForeignKey(PhilAddress,  blank=True, null=True, on_delete=models.SET_NULL)
+    carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL)  
+
+    class Meta:
+        db_table            = u'latest_rsl'
+        verbose_name_plural = "Latest RSLs"
+        verbose_name        = "Latest RSL"
+        ordering            = ["issued"]
+    def __unicode__(self):
+        return self.rslno
+#############
+# Receive the pre_delete signal and delete the file associated with the model instance.
+#ok!
+def cfile_counter(c):
+    if c < 10:
+        c = '000'+str(c)
+    elif c < 100:
+        c = '00'+str(c)
+    elif c < 1000:
+        c = '0'+str(c)
+    else:
+        c = str(c)
+    return c
+#ok!
+def cmonth_counter():
+    now = make_aware(datetime.now(),get_default_timezone())
+  
+    m = now.month
+    if m < 10:
+        m = '0'+str(m)
+    else:
+        m = str(m)
+    return m
+#ok!
+def check_controlNo(queryset):
+    qry_year = int(queryset.controlNo[0:4])    
+    qry_month = int(queryset.controlNo[5:7])
+    #print 'year: ', qry_year
+    #print 'month', qry_month
+    now = make_aware(datetime.now(),get_default_timezone())
+    #print 'now.year: ', now.year
+    #print 'now.month: ', now.month   
+    if now.year == qry_year and now.month == qry_month:   # check if its a new month
+        next_counter = int(queryset.controlNo[8:12]) +1
+    else:
+        next_counter = 0
+    #print 'next_counter', next_counter
+    return next_counter
+#ok!
+@receiver (pre_save, sender=Letter_LogBook)
+def Letter_controlNo(sender, instance, **kwargs):   
+    try:
+        qry = LogBook.logbook_objects.all()
+        print 'qry :', qry
+        qry2 = Letter_LogBook.logbook_objects.all()    
+        print 'qry2 :', qry2
+        logbook_cn = check_controlNo(qry)
+        print 'logbook_cn: ', logbook_cn
+        letter_cn = check_controlNo(qry2)
+        print 'letter_cn: ', logbook_cn
+    except ObjectDoesNotExist:
+        print "Either LogBook or Letter doesn't exist."
+        #qry = LogBook.logbook_objects.none()        
+        logbook_cn = 0
+        letter_cn = 0
+
+    if logbook_cn > letter_cn:                # choose what control no is the latest
+        next_counter = logbook_cn             # between logbook and letter    
+    elif logbook_cn < letter_cn:              # choose what control no is the latest
+        next_counter = letter_cn
+    elif logbook_cn == letter_cn and logbook_cn > 0:              # choose what control no is the latest
+        next_counter = letter_cn+1
+    else:
+        next_counter = 0
+    print 'next_counter: ', next_counter
+    if not instance.pk:       
+        c = cfile_counter(next_counter)       # format the counter
+        # return a formated Control No
+        instance.controlNo = str(datetime.now().year)+'-'+cmonth_counter()+'-'+c
+#ok!
+@receiver (pre_save, sender=LogBook)
+def LogBook_controlNo(sender, instance, **kwargs):   
+    now = make_aware(datetime.now(),get_default_timezone())    
+    try:
+        qry = LogBook.logbook_objects.all()
+        qry2 = Letter_LogBook.logbook_objects.all()    
+        logbook_cn = check_controlNo(qry)
+        letter_cn = check_controlNo(qry2)
+    except ObjectDoesNotExist:
+        print "Either LogBook or Letter doesn't exist."
+        qry = LogBook.objects.none()        
+        logbook_cn = 0
+        letter_cn = 0
+    
+    if logbook_cn > letter_cn:                # choose what control no is the latest
+        next_counter = logbook_cn             # between logbook and letter
+    elif logbook_cn < letter_cn:              # choose what control no is the latest
+        next_counter = letter_cn
+    elif logbook_cn == letter_cn and logbook_cn > 0:              # choose what control no is the latest
+        next_counter = letter_cn+1
+    else:
+        next_counter = 0   
+    #print 'next_counter', next_counter
+    apptype = instance.transtype.replace('NEW','').replace('//','/')
+    #print 'apptype: ', apptype
+    if not instance.pk: 
+        c = cfile_counter(next_counter)       # format the counter
+        # return a formated Control No
+        instance.controlNo = str(now.year)+'-'+cmonth_counter()+'-'+c+'-'+apptype
+    else:       
+        instance.stm_count = Statements.objects.filter(logbook=instance.pk).count()
+#ok!
+# temporary disable while uploading previous SOA
+@receiver(pre_save, sender=SOA)
+def SOA_controlNo(sender, instance, **kwargs):    
+    d = instance.no_years * 365
+    instance.validity_to = instance.validity_from+timedelta(days=int(d))
+
+    c = SOA.soa_objects.count()
+    if not instance.pk:    
+        c = cfile_counter(c)
+        if not instance.soa_code:
+            # return a formated Control No
+            instance.soa_code = str(datetime.now().year)+'-'+cmonth_counter()+'-'+c
+
+@receiver(post_save, sender=SOA_detail)
+def compute_suf(sender, instance, **kwargs):
+    #print 'instance.soa :', instance.soa.id
+    #print 'instance.suf_fee :', instance.suf_fee
+    try:
+        soa_instance = SOA.objects.get(pk=instance.soa.id)
+        #print 'SOA object found with suf_fees :', soa_instance.suf_fees        
+    except:
+        print 'compute_suf: No SOA found'
+        soa_instance = SOA.objects.none()
+
+    detail_suf_sum = SOA_detail.objects.filter(soa=instance.soa.id).aggregate(Sum('suf_fee'))
+    #if soa_instance.suf_fees != detail_suf_sum['suf_fee__sum']:
+    soa_instance.suf_fees = detail_suf_sum['suf_fee__sum']
+    #print 'Assigning new suf_fees :', soa_instance.suf_fees
+    soa_instance.save()
+    #print 'Saving new suf_fees'
+
+@receiver (post_save, sender=KPI)
+def staff_KPI(sender, instance, **kwargs):     
+    staff_count = 0
+    staff_target= 0
+    staff_list   = NAFD_User.objects.filter(Q(groups__name='Encoder')|Q(groups__name='Engr'), ~Q(groups__name='NFD Chief'))    
+    staff_count  = staff_list.count()
+    #print 'Staff count: ', staff_count
+    ## find current kpi target
+    try: 
+        nafd_kpitarget = KPI.objects.get(current_year=datetime.now().year)
+        staff_target   = nafd_kpitarget.target
+        #print 'NAFD KPI target', nafd_kpitarget.target
+    except ObjectDoesNotExist:
+        staff_target = 0
+        #print 'Object Does not Exist: staff target = 0'
+    
+    for staff in staff_list:
+        staff_rec = NAFD_User.objects.get(pk=staff.id)
+        #print 'staff_rec id: ', staff_rec.kpi_target
+        staff_rec.kpi_target = staff_target/staff_count
+        #print 'staff kpi_target: ', staff_rec.kpi_target
+        staff_rec.save()
+
+''' depreciated in Django 1.5
+class UserProfile(models.Model):
+    # Required field
+    user = models.OneToOneField(User)
+    # Other Fields
+    code_name = models.CharField(max_length=10, blank=True, null=True)
+    kpi_target= models.DecimalField(max_digits=10, decimal_places=0, blank=True, null=True)
+    foryear   = models.DecimalField(max_digits=4, decimal_places=0, blank=True, null=True)
+
+    def __unicode__(self):
+        return self.code_name
+'''
+#ok!
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        NAFD_User.objects.create(pk=instance)
+
+post_save.connect(create_user_profile, sender=settings.AUTH_USER_MODEL)
+
+@receiver (pre_save, sender=LatestRsl_v2)
+def LRsl_controlNo(sender, instance, **kwargs):
+    if instance.sitename.address:
+        print 'province: ', instance.sitename.address.province     
+        sitename_province =instance.sitename.address.province  
