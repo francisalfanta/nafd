@@ -1,0 +1,113 @@
+.grp-td { padding: 0px 0px 0px 0px !important;}          
+.grp-th { padding: 1px 5px 1px 5px  !important;}
+.grp-th { font-weight: bold !important; }
+    
+.grp-td.ppp_units { background-color: yellow  !important;}
+.grp-td.ppp_units { border-top-color: yellow  !important;}
+.grp-td.ppp_units { border-right-color: yellow  !important;}
+.grp-td.ppp_units { border-bottom-color: yellow  !important;}
+.grp-td.ppp_units { border-left-color: yellow  !important;}
+
+.grp-td.purchase_fee { background-color: yellow  !important;}
+.grp-td.purchase_fee { border-top-color: yellow  !important;}
+.grp-td.purchase_fee { border-right-color: yellow  !important;}
+.grp-td.purchase_fee { border-bottom-color: yellow  !important;}
+.grp-td.purchase_fee { border-left-color: yellow  !important;}
+
+.grp-td.possess_fee { background-color: yellow  !important;}
+.grp-td.possess_fee { border-top-color: yellow  !important;}
+.grp-td.possess_fee { border-right-color: yellow  !important;}
+.grp-td.possess_fee { border-bottom-color: yellow  !important;}
+.grp-td.possess_fee { border-left-color: yellow  !important;}
+
+.grp-td.ppp_dst_fee { background-color: yellow  !important;}
+.grp-td.ppp_dst_fee { border-top-color: yellow  !important;}
+.grp-td.ppp_dst_fee { border-right-color: yellow  !important;}
+.grp-td.ppp_dst_fee { border-bottom-color: yellow  !important;}
+.grp-td.ppp_dst_fee { border-left-color: yellow  !important;}
+
+.grp-td.rsl_units { background-color: yellowgreen !important;}
+.grp-td.rsl_units { border-top-color: yellowgreen  !important;}
+.grp-td.rsl_units { border-right-color: yellowgreen  !important;}
+.grp-td.rsl_units { border-bottom-color: yellowgreen  !important;}
+.grp-td.rsl_units { border-left-color: yellowgreen  !important;}
+
+
+.grp-td.license_fee { background-color: yellowgreen !important;}
+.grp-td.license_fee { border-top-color: yellowgreen  !important;}
+.grp-td.license_fee { border-right-color: yellowgreen  !important;}
+.grp-td.license_fee { border-bottom-color: yellowgreen  !important;}
+.grp-td.license_fee { border-left-color: yellowgreen  !important;}
+
+.grp-td.inspection_fee { background-color: yellowgreen }
+.grp-td.inspection_fee { border-top-color: yellowgreen  !important;}
+.grp-td.inspection_fee { border-right-color: yellowgreen  !important;}
+.grp-td.inspection_fee { border-bottom-color: yellowgreen  !important;}
+.grp-td.inspection_fee { border-left-color: yellowgreen  !important;}
+
+.grp-td.rsl_dst_fee { background-color: yellowgreen !important;}
+.grp-td.rsl_dst_fee { border-top-color: yellowgreen  !important;}
+.grp-td.rsl_dst_fee { border-right-color: yellowgreen  !important;}
+.grp-td.rsl_dst_fee { border-bottom-color: yellowgreen  !important;}
+.grp-td.rsl_dst_fee { border-left-color: yellowgreen  !important;}
+
+.grp-td.mod_filing_fee { background-color: orange !important;}
+.grp-td.mod_filing_fee { border-top-color: orange  !important;}
+.grp-td.mod_filing_fee { border-right-color: orange  !important;}
+.grp-td.mod_filing_fee { border-bottom-color: orange  !important;}
+.grp-td.mod_filing_fee { border-left-color: orange  !important;}
+
+.grp-td.mod_units { background-color: orange !important;}
+.grp-td.mod_units { border-top-color: orange  !important;}
+.grp-td.mod_units { border-right-color: orange  !important;}
+.grp-td.mod_units { border-bottom-color: orange  !important;}
+.grp-td.mod_units { border-left-color: orange  !important;}
+
+.grp-td.mod_fee { background-color: orange !important;}
+.grp-td.mod_fee { border-top-color: orange  !important;}
+.grp-td.mod_fee { border-right-color: orange  !important;}
+.grp-td.mod_fee { border-bottom-color: orange  !important;}
+.grp-td.mod_fee { border-left-color: orange  !important;}
+
+.grp-td.stor_units { background-color: red !important;}
+.grp-td.stor_units { border-top-color: orange  !important;}
+.grp-td.stor_units { border-right-color: orange  !important;}
+.grp-td.stor_units { border-bottom-color: orange  !important;}
+.grp-td.stor_units { border-left-color: orange  !important;}
+
+.grp-td.storage_fee { background-color: red !important;}
+.grp-td.storage_fee { border-top-color: red  !important;}
+.grp-td.storage_fee { border-right-color: red  !important;}
+.grp-td.storage_fee { border-bottom-color: red  !important;}
+.grp-td.storage_fee { border-left-color: red  !important;}
+
+.grp-td.sto_dst_fee { background-color: red !important;}
+.grp-td.stor_dst_fee { border-top-color: red  !important;}
+.grp-td.stor_dst_fee { border-right-color: red  !important;}
+.grp-td.stor_dst_fee { border-bottom-color: red  !important;}
+.grp-td.stor_dst_fee { border-left-color: red  !important;}
+
+.grp-td.suf_fee { background-color: blue !important;}
+.grp-td.suf_fee { border-top-color: blue  !important;}
+.grp-td.suf_fee { border-right-color: blue  !important;}
+.grp-td.suf_fee { border-bottom-color: blue  !important;}
+.grp-td.suf_fee { border-left-color: blue  !important;}
+
+.grp-td.suf_rate { background-color: blue !important;}
+.grp-td.suf_rate { border-top-color: blue  !important;}
+.grp-td.suf_rate { border-right-color: blue  !important;}
+.grp-td.suf_rate { border-bottom-color: blue  !important;}
+.grp-td.suf_rate { border-left-color: blue  !important;}
+
+.grp-td.freq { background-color: blue !important;}
+.grp-td.freq { border-top-color: blue  !important;}
+.grp-td.freq { border-right-color: blue  !important;}
+.grp-td.freq { border-bottom-color: blue  !important;}
+.grp-td.freq { border-left-color: blue  !important;}
+
+.grp-td.bw { background-color: blue !important; }
+.grp-td.bw { border-top-color: blue  !important;}
+.grp-td.bw { border-right-color: blue  !important;}
+.grp-td.bw { border-bottom-color: blue  !important;}
+.grp-td.bw { border-left-color: blue  !important;}
+        

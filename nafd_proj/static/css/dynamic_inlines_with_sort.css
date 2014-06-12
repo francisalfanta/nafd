@@ -1,0 +1,24 @@
+/* To make row height of saved items same as others test */
+.inline-group .tabular tr.has_original td { padding-top:0.5em; }
+.inline-group .tabular tr.has_original td.original p { display:none; }
+
+.grp-td.equipment { width: 420px !important; }
+.grp-tr, .grp-th, .grp-td, .grp-module.grp-tbody, .grp-module.grp-thread, .grp-module.grp-table { padding: 0px 0px 0px 0px !important; }
+.grp-th { font-weight: bold  !important; }
+
+/* for autocomplete-light-widget */
+.deck.div {width: 250px !important; }
+
+.grp-cell.status 	{ padding-right: 41px !important;}    
+.grp-cell.form_serial{ padding-right: 122px !important;}
+.encoder 	{ padding-right: 82px !important; }            
+.grp-th 	{ padding: 1px 5px 1px 5px !important; font-weight: bold !important; }
+
+
+.current_user { padding-right: 91px  !important; }  
+.transtype, .units { padding-right: 111px  !important; }     
+.soa { padding-right: 89px  !important; }    
+.controlNo { padding-right: 100px  !important; } 
+.acceptancedate { padding-right:3px !important;}
+
+      

@@ -1,0 +1,47 @@
+body{width:1000px;margin:10px 0 0 15px}
+div#content, #header-info{width:1000px;font-family:Arial;font-size:12px}
+span#marker{margin-left:0}
+
+div#rcvd-info{float:right;width:210px}
+#date-rcvd{width:110px; float:left}
+.date-colon{float:right}
+#date-rcvd-value{width:120px; margin-left:120px;}
+
+
+div#top-info{height:60px; display: block;}
+#status-info{margin-top:10px;}
+#infodetail{width:100%;height:auto; margin-top:10px; font-family:Arial;font-size:12px }
+
+.name-field{width:80px; float:left}
+.colon-field{float:right}
+.value-field{width:620px;margin-left:90px;}
+
+.or-name-field{width:110px; float: left}
+.or-value-field{width:110px; margin-left:120px;}
+
+.right-table{ margin-left:760px; margin-top:-75px; border-style:dotted; border-width:1px; background: lightgray; padding:5px}
+.left-table{margin-top:20px;}
+
+.right-table-row{width:220px;}
+.left-table-row{width:750px;}
+
+#bottom-left-row{margin-top:10px;font-weight: bold}
+
+#fasfan, #ppp{width:190px; float:left}
+#fasfan-value, #ppp-value{width:210px; margin-left:200px}
+
+.right-low-tble{margin-top:20px;}
+
+#status{margin-top:10px}
+#due-to{float:right; margin-top:-25px}
+.pbar{width:100%; height:4px}
+
+.block{font-weight:bold}
+.icon{width:30px}
+.site-name{width:160px}
+.address{width:210px}
+.license-no{width:230px}
+.call-sign{width:90px}
+.eq-serial{width:130px}
+.remarks{width:170px}    
+
