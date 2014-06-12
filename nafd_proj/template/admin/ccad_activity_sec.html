@@ -1,0 +1,12 @@
+{% extends "admin/ccad_activity_rbsec.html" %}
+{% load staticfiles admin_urls extra_filter %}
+{% load url from future %}
+
+{% block endorsement %}                   
+{% if task.status in 'ENDORSEMENTPAYMENT' %} 
+    {% for engr in engr_list %}
+        <input id="{{engr}}" class="engr_choices" type="radio" name="{{ form.prefix }}-current_user" value="{{ engr.id }}"/>
+        <label for="{{ engr }}">{{ engr|upper }}</label>
+    {% endfor %}                    
+{% endif %}  
+{% endblock %}

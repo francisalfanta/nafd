@@ -1,0 +1,82 @@
+{% extends "ccad_dicsd_base.html" %}
+{% load staticfiles %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html>
+<head>
+{% block custom_header %}    
+  {% include "header.html" %}  
+  <link rel="stylesheet" type="text/css" href="{% static "css/detail_page_cprsl.css" %}" />
+  <script>
+    $(function() {          
+      $('#pbar-{{ instance.id }}').progressbar({
+        value: {{ status_value }}
+      });
+    }); 
+  
+  </script>
+  {% block ext_header %}
+  {% endblock ext_header %}
+{% endblock custom_header %}
+
+</head>
+{% block content %}
+<body>
+<div id="content">
+<div id="header-info"><span id="marker">Detail information for <b>{{ instance.controlNo }}</b></span>
+    <div id="rcvd-info">
+        <div id="date-rcvd">Date Received <span class="date-colon">:</span></div>
+        <div id="date-rcvd-value">{% firstof instance.dateEntry 'no data' %}</div>
+    </div>
+</div>
+<div id="top-info">
+<div class="left-table">
+    <div class="left-table-row">
+        <div class="name-field">Filed by <span class="colon-field">:</span></div>       
+        <div class="value-field">{% firstof instance.carrier.companyname 'no data' %}</div>
+    </div>
+    <div class="left-table-row"><div class="name-field">Task <span class="colon-field">:</span></div>        
+        <div class="value-field">{% firstof data.units 'unknown' %} unit{{ instance.units|pluralize }} for                                 
+                                 {% if instance.transtype == "RENMOD" %}
+                                  renewal/modification
+                                 {% endif %}
+                                 {% if instance.transtype == "NEW" %}
+                                  new CP /
+                                 {% endif %}
+                                 {% if instance.transtype == "REN" %}
+                                  extension of CP /
+                                 {% endif %}
+                                 {% if instance.transtype == "MOD" %}
+                                  modification of CP /
+                                 {% endif %} RSL
+        </div>        
+    </div>    
+    <div class="left-table-row">
+        <div class="name-field">Service <span class="colon-field">:</span></div>        
+        <div class="value-field">{% firstof instance.service|title 'no data available' %}</div>
+    </div>
+</div>    
+<div id="bottom-left-row">
+    <div class="left-table-row ">
+        <div id="fasfan">FAS/FAN Date <span class="colon-field">:</span></div>        
+        <div id="fasfan-value">{% firstof instance.fas_data.ReferenceNumber 'no data' %}</div>
+    </div>        
+    <div class="left-table-row">
+        <div id="ppp">Permit to Possess/Purchase<span class="colon-field">:</span></div>        
+        <div id="ppp-value">{% firstof instance.permitNo 'no data' %}</div>
+    </div>    
+</div>
+{% include "official_receipt.html" with task=instance %}
+</div>
+{% block filename %}
+    {% include "filename.html" %}
+{% endblock filename %}
+{% include "status_progressbar.html" with task=instance %}
+{% include "table_cprsl.html" with task=instance %}
+</div>
+{% endblock content %}
+{% block custom_footer %}
+{% endblock custom_footer %}
+</body>
+</html>

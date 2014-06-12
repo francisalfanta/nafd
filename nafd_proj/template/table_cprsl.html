@@ -1,0 +1,50 @@
+{% load staticfiles admin_urls extra_filter %}
+{% load url from future %}
+<style>table{border:1px solid black;}.license-no{width:110px;}.license-no, .site-name, .address, .ptsvc,.call-sign, .eq-serial, .antenna-info, .tx-rx{width:0%;}</style>
+<table id="infodetail" cellspacing="0"  border="1">
+ <thead>        
+   <tr style="background-color:lightgray;">
+      <td class="license-no block">License No</td>
+      <td class="site-name block">Site Name</td>
+      <td class="address block">Address</td>      
+      <td class="ptsvc block">Point of Service</td>
+      <td class="call-sign block">Call-Sign</td>
+      <td class="eq-serial block">Equip Serial</td>       
+      <td class="antenna-info block">Antenna Info</td>
+      <td class="tx-rx block">Tx/Rx</td>
+   </tr>
+ </thead>
+ <tbody>
+   {% for rsl, eq in rsl_zip %}
+   <tr>
+      <td class="license-no">{{rsl.rslno}}</td>    
+      <td class="site-name">{{rsl.sitename}}</td>
+      <td class="address">{{rsl.sitename.street}}</td>      
+      <td class="ptsvc">{{rsl.ptsvc}}</td>      
+      {%if eq.eq_id %}
+      <td class="call-sign">
+         {% for cs in eq.callsign %}         
+            {{cs}}
+         {% endfor %}
+      </td>
+      <td class="eq-serial"> 
+         {% for sn, eq_id in eq.serialno %}                                  
+            <a href="{% url 'admin:ccad_equipment_change' eq_id %}?next={% url 'info_detail' detail='cprsl' pk=instance.id %}">{{sn}}</a> <br>      
+         {% endfor %}
+      </td>       
+      <td class="antenna-info"><a href="{% url 'admin:ccad_antenna_change' eq.antenna_id %}?next={% url 'info_detail' detail='cprsl' pk=instance.id %}">{{eq.antenna}}</a></td>
+      <td class="tx-rx">
+         {% for txrx in eq.txrx %}
+               {{txrx}} <br>
+         {% endfor %}         
+      </td>
+      {% else %}
+      <td class="call-sign"></td>
+      <td class="eq-serial"></td>       
+      <td class="antenna-info"></td>
+      <td class="tx-rx"></td>
+      {% endif %}
+   </tr>   
+   {% endfor %}
+ </tbody>
+</table>

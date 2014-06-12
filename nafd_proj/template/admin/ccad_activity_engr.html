@@ -1,0 +1,142 @@
+{% load staticfiles admin_urls extra_filter %}
+{% load url from future %}
+<!-- Engr View admin/ccad_activity_engr-->
+{% if formset.is_multipart %}    
+    <form action="{% url 'logs' url_args|iriencode %}" method="post" encytpe="multipart/form-data">
+{% else %}
+    <form method="post" action="{% url 'logs' url_args|iriencode %}">
+{% endif %}
+{% csrf_token %}
+{{ formset.management_form }}  
+<table id="content" cellspacing="0" border="0">   
+    <thead>
+      <tr><td colspan="5"><hr style="padding:0px; margin:0px"/></td></tr>
+      <tr valign="middle">
+        <td id="no-check" style="width:15px; text-align:center;">
+            <input id="check-all" class="checkbox" name="selector" type="checkbox"/></td> 
+        <td id="icon" style="padding:0; vertical-align:middle;">
+            <input id="submit" class="grp-button" type="submit" value="Submit" style="padding:0 10px 0 10px; height:22px; width:64px "/></td> 
+        <td id="cn-header">Control No.</td>
+        <td id="task-header">Tasks</td>
+        <td id="action-header">Action</td>
+      </tr>
+      <tr><td colspan="5"><hr style="padding:0px; margin:0px"/></td></tr>
+    </thead>   
+    <tbody>        
+         <!-- Start row-->
+        {% for task, form in task_and_formset %}     
+        {{ form.id }} 
+        <!-- Used for processing status-->
+        <input type="hidden" id="id_form-{{ forloop.counter0 }}-controlNo" name="{{ form.prefix }}-controlNo" value="{{ form.controlNo.value }}"/>
+        <input type="hidden" id="id_form-{{ forloop.counter0 }}-status" name="{{ form.prefix }}-status" value="{{ form.status.value }}"/>
+        <!-- End -->
+        <tr class="activity-row">  
+          <td colspan="5" style="padding:0;">
+           <table id="activity-table">
+            <tr id="activity-row" style="font-size:12px">
+                <td id="cb-{{ forloop.counter|cei:logs.number }}" style="width:15px; vertical-align:middle;" class="cb-activity">
+                {% if  task.status not in 'PAYMENTENDORSEMENTENCODING' and task.current_user|upper == user|upper %}
+                    <input id="id_form-{{ forloop.counter0 }}-ischecked" class="checkbox"  type="checkbox" name="{{ form.prefix }}-ischecked" />
+                {% endif %}
+                </td>                
+                <td id="icon-{{ forloop.counter|cei:logs.number }}" class="icon">
+                    {% if  task.status not in 'PAYMENTENDORSEMENTENCODING' and task.current_user|upper == user|upper %}
+                    <img scr="{{STATIC_URL}}newicon.jpg" alt="icon" width="24" height="24">
+                    {% endif %}
+                </td>
+                <td id="cn">
+                    <span class="controlno">
+                        <a style="color:#3399BB;font-weight:bold;" id="controlno-{{ forloop.counter|cei:logs.number }}" href="{% url 'admin:ccad_logbook_change' task.id %}?next={% url 'logs' 'index' %}">
+                            {{ task.controlNo }} 
+                        </a>
+                    </span>                                 
+                </td>
+                <td id="task">{{ task.carrier.companyname }} <br> {{ task.units }} unit{{task.units|pluralize}} for {{ task.transtype }}
+                              {% if task.transtype not in "PPPDEMOTPLRINQOFOR" %}
+                                <br> from station {{ task.first_stn|capfirst }} to station {{ task.last_stn|capfirst }}
+                              {% endif %}
+                </td>
+                <td id="action-{{ forloop.counter|cei:logs.number }}" class="action">
+                {% if task.status not in 'CHECKING REQUIREMENTSPAYMENT' and task.current_user|upper == user|upper or task.status in 'ENCODING' %}
+                    {% if task.status != "EVALUATION" %}
+                    {% if task.endorsementfile|wordcount > 0 %}
+                        <div id="file-name-{{ forloop.counter|cei:logs.number }}" class="file-name">Endorsement File name: 
+                            <a id="current-file" href="{{ MEDIA_URL }}{{ task.endorsementfile }}">{{ task.endorsementfile|only_filename }}</a>
+                            {% if task.status = "ENDORSEMENT" %}
+                                <a href="{% url 'delete_endorsementfile' pk=task.id rb_filterby=url_args|iriencode %}" onclick="engr_uploadWindow({{ form.id.value }})">
+                                {% ifequal task.current_user requestuser %}
+                                <span id="clear-endorsement-{{ task.id }}" class="clear-endorsement"></span>
+                                {% endifequal %}
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    {% if task.transtype in "PPPDEMOTPLRINQOFOR" %}
+                        {% if task.docfile|wordcount > 0 %}<div class="file-name">PPP File name: {{ task.docfile|only_filename }}</div>{% endif %}
+                        {% else %}
+                            {% if task.id|check_pppfiles %}
+                            <div class="file-name"><a  href="{% url 'admin:ccad_pppfiles_changelist'%}?logbook__id__exact={{task.id}}" style="font-size:14; font-weight:bold">PPP File exist</a></div>
+                            {% else %}
+                            <div class="file-name">No PPP File found</div>
+                            {% endif %}
+                            <div class="file-name">FAS-FAN: {% firstof task.fas_data.ReferenceNo|upper 'not available' %}</div>                        
+                    {% endif %}             
+                    {% endif %}
+                    {% if task.status == 'ENDORSEMENT' and task.current_user|upper == user|upper %}
+                    <div><a class="undo-link" href="/logs/engr/undo/'+rec_id+'" style="font-size:14; font-weight:bold">Recall Endorsement</a></div>
+                    {% endif %}
+                    <span id="engr_action-here-{{ forloop.counter|cei:logs.number }}" class="engr_action">
+                        {% if task.status not in 'PENDING' %}
+                        {% if task.status not in 'ENCODINGREVIEW' %}
+                            {% if task.status not in 'SIGNATURE' %}
+                                {% include "admin/engr_action.html" %}
+                            {% endif %}
+                        {% else %}
+                        <div><a class="undo-link" href="/logs/engr/undo/'+rec_id+'" style="font-size:14; font-weight:bold">Re-assign</a></div>
+                        {% endif %}
+                        {% endif %}                        
+                    </span>
+                {% endif %}
+                </td>                            
+                {% ifequal task.status "EVALUATION" %}
+                    {% ifequal task.current_user requestuser %}
+                    <td id="eval-action-{{ forloop.counter|cei:logs.number }}" class="eval-action" style="width:25px;  padding:0; border:0; text-align:left; vertical-align:middle;">
+                        <span id="cancel-action-{{ forloop.counter|cei:logs.number }}" class="cancel-action" onclick="cancelaction({{ forloop.counter }})" style="width:25px; height:100%; padding:0; ">                        
+                        </span>
+                    {% else %}
+                        <td id="eval-action-{{ forloop.counter|cei:logs.number }}" class="eval-action" style="width:28px;  padding:0;">                    
+                    {% endifequal %}
+                {% else %}
+                <td id="eval-action-{{ forloop.counter|cei:logs.number }}" class="eval-action" style="width:28px;  padding:0;">
+                {% endifequal %}
+                </td>                
+            </tr>
+            <tr>
+                <td></td>
+                <td colspan="2" id="status">Status:
+                     <span id="stvalue-{{ forloop.counter|cei:logs.number }}" class="status-value">{{ task.status|title }}
+                    {% if task.status in 'CASHIER STAMPISSUANCE OF SOACHECKING REQUIREMENTSPAYMENTRELEASETASK COMPLETED TO SECRETARIAT' %} 
+                        </span>
+                    {% else %}
+                        by {{ task.current_user|default_if_none:"- - -"|capfirst }}</span>                   
+                    {% endif %}                    
+                </td>
+                <td id="more_details-{{ forloop.counter|cei:logs.number }}" class="more_details" >
+                    {% include "admin/ppp_cprsl_details_link.html" %}
+                </td>
+                <input type="hidden" id="detail-info-{{ forloop.counter|cei:logs.number }}" value="{{ form.id.value }}"/>
+                <td id="due_date" colspan="2">Due in {{ task.due_date|date:"DATE_FORMAT" }}</td>            
+            </tr>       
+            <tr>
+                <td colspan="6"  cellpadding="0" style="padding:0">
+                   <div id='pbar-{{ forloop.counter|cei:logs.number }}' class="pbar" ></div>
+                </td>
+            </tr>
+           </table>
+          </td>    
+        </tr>
+        {% endfor %}
+        <!-- End row-->                  
+    </tbody>
+</table>    
+</form>

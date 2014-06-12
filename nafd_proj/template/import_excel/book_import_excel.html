@@ -1,0 +1,40 @@
+{% load i18n admin_static admin_modify %}
+{% load url from future %}
+{% load admin_urls %}
+
+<HTML>
+<HEAD>
+<TITLE>Load data from EXCEL: {{ form_class_name }}</TITLE>
+
+</HEAD>
+
+<BODY>
+<br>
+<h2>Load data from SOA Excel template: </h2>
+
+<form action="" method="POST" enctype="multipart/form-data"{# <-Required enctype #}>{% csrf_token %}
+	<table>
+		{{ form }}	
+		<tr>		
+			<td><input type="submit" value="Load data" name="submit"/></td>		
+		</tr>
+	</table>
+</form>
+
+
+{% if with_good and converted_items %}
+<h3>Check:</h3>
+<div class="results">
+<table>
+    {% for item in converted_items %}
+    <tr>
+        {% for value in item %}
+        <td><div style="white-space: pre-wrap;">{{ value }}</div></td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+</div>
+{% endif %}
+</BODY>
+</HTML>

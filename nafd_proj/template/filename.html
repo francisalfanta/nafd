@@ -1,0 +1,16 @@
+{% load staticfiles admin_urls extra_filter %}
+{% load url from future %}
+
+<div class="right-low-tble" >
+  <span >File Name : </span>
+  <div style="margin-left: 80px; margin-top: -17px; float-left; ">
+   {% if instance.id|check_pppfiles %}	  	  
+	    {% for rec in instance.id|pppfile_names %}	    	
+	    	  <a href="{{ MEDIA_URL}}{{rec.docfile}}">{{rec.docfile}}</a>
+	    	  <br>   	
+	    {% endfor %}
+   {% else %}
+	    No PPP File found
+   {% endif %}  
+  </div>
+</div> 

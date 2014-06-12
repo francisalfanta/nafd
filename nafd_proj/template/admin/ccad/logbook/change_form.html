@@ -1,0 +1,54 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_static admin_modify %}
+{% load url from future %}
+{% load admin_urls %}
+
+{% block javascripts %}
+    {{ block.super }}
+    <script>
+    var my_string = '';
+    function set_string( x ) { 
+        my_string = x;
+    }
+    </script>
+{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% static "admin/js/common.js" %}"></script>
+<script>
+   $(document).ready(function(){
+   {% if original.id %}
+    // for Testing
+    //$("fieldset.placeholder.statements_set-group").replaceWith($('#statements_set-group')); 
+   {%endif%}
+   });
+</script>
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+<!-- Submit-Row Find a way to add custom button FMA, doing so-->
+<footer class="grp-module grp-submit-row grp-fixed-footer">
+    <header style="display:none"><h1>Submit Options</h1></header>
+    <ul>
+        {% if 'ccad.engr_view_logbook' in perms %}
+        <li><input type="submit" value="{% trans 'Save ' %}" class="grp-button grp-default" name="_save" {{ onclick_attrib }}/></li>
+        {% endif%}
+        {% if 'ccad.sec_view_logbook' in perms %}
+        <li><input type="submit" value="{% trans 'Save ' %}" class="grp-button grp-default" name="_save" {{ onclick_attrib }}/></li>
+        <!--<li><input type="submit" value="{% trans 'Save as new' %}" class="grp-button" name="_saveasnew" {{ onclick_attrib }}/></li>-->
+        <li><input type="submit" value="{% trans 'Save and add another' %}" class="grp-button" name="_addanother" {{ onclick_attrib }} /></li>
+        <li><input type="submit" value="{% trans 'Save and continue editing' %}" class="grp-button" name="_continue" {{ onclick_attrib }}/></li>        
+        {% endif %}       
+        {% if 'ccad.encoder_view_logbook' in perms %}
+        <li><input type="submit" value="{% trans 'Save ' %}" class="grp-button grp-default" name="_save" {{ onclick_attrib }}/></li>
+            {% if original and original.transtype == "PPP" %}        
+            <li><input  value="{% trans 'Import PPP Excel info' %}" class="grp-button" onclick="ImportexcelWindow({{original.id}}, 2)"/></li>
+            {% else %}
+            <li><input  value="{% trans 'Import PPP Excel info' %}" class="grp-button" onclick="ImportexcelWindow({{original.id}}, 2)"/></li>
+            <li><input  value="{% trans 'Import RSL Excel info' %}" class="grp-button" onclick="ImportexcelWindow({{original.id}}, 1)"/></li>       
+            {% endif %}
+        {% endif %}     
+    </ul>
+</footer>
+{% endblock %}
+<!--END Submit -->

@@ -1,0 +1,33 @@
+{% load staticfiles admin_urls extra_filter %}
+{% load url from future %}
+<style>table{border:1px solid black;}.license-no{width:110px;}.license-no, .site-name, .address, .ptsvc,.call-sign, .eq-serial, .antenna-info, .tx-rx{width:0%;}</style>
+<table id="infodetail" border="2" cellspacing="0" >
+ <thead >   
+   <tr style="background-color:lightgray;">
+      <td class="model block">Model</td>
+      <td class="serial block">Serial</td>       
+      <td class="freq block">Freq</td>
+      <td class="bw block">BWE</td>
+      <td class="power block">Power</td>
+      <td class="txrx block">Tx/Rx</td>
+      <td class="polarity block">Polarity</td>
+      <td class="callsign block">Call-Sign</td>
+      <td class="site-name block">Site Name</td>
+   </tr>
+ </thead>
+ 
+ <tbody>
+  {% for eq, rsl in equip_zip %}
+  <tr><td class="model">{{eq.makemodel}}</td>
+      <td class="serial">{{eq.serialno}}</td>      
+      <td class="freq">{{eq.freqrange_low}}-{{eq.freqrange_high}}</td>
+      <td class="bw">{{eq.bwe}}</td>
+      <td class="power">{{eq.power}} {{eq.unit}}</td>
+      <td class="tx-rx">{{eq.tx}}-{{eq.rx}}</td>
+      <td class="polarity">{{eq.polarity}}</td>
+      <td class="callsign">{{eq.callsign}}</td>
+      <td class="site-name">{{rsl.sitename}}</td>
+  </tr> 
+  {% endfor %}  
+ </tbody>
+</table>

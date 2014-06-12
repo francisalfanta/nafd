@@ -1,0 +1,9 @@
+<div id="status-info">
+    <div id="status">Status:   
+        <span id="stvalue-" class="status-value">{{ task.status|title }}</span>
+        <span id="encoder"  class="encoder-value">{% if task.status in 'ISSUANCE OF SOACHECKING REQUIREMENTSPAYMENTRELEASETASK COMPLETED TO SECRETARIAT' %}{% else %} by {{task.current_user|upper}}{% endif %}
+        </span>
+        <div id="pbar-{{ task.id }}" class="pbar"></div>
+    </div>
+    <div id="due-to">Due on {{ task.due_date|date:"DATE_FORMAT"}}</div>
+</div>

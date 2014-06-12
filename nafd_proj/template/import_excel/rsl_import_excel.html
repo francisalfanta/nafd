@@ -1,0 +1,61 @@
+{% load i18n admin_static admin_modify %}
+{% load url from future %}
+{% load admin_urls %}
+
+<HTML>
+<HEAD>
+<TITLE>Load data from EXCEL: {{ form_class_name }}</TITLE>
+{% include 'header.html' %}
+<script type="text/javascript">
+function refreshParent() {
+    window.opener.location.reload();
+    window.close();   
+} 
+$(document).ready(function(){ 
+  	// close import window after load
+    $('input[type="submit"]').click(function(event){    	
+    	if($('#id_is_good').is(':checked')){
+      		window.onunload = refreshParent;   
+    	}
+  	}); 
+});
+</script>
+</HEAD>
+
+<BODY>
+<br>
+<h2>Load data from RSL Excel template: </h2>
+
+<form action="" method="POST" enctype="multipart/form-data"{# <-Required enctype #}>{% csrf_token %}
+	<table>
+		{{ form }}	
+		<tr>		
+			<td><input type="submit" value="Load data" name="submit"/></td>		
+		</tr>
+	</table>
+</form>
+<script type="text/javascript">
+window.addEventListener('load', function () {   
+    var url     = window.location.href,        
+        trim_id = url.replace("http://localhost/logs/latestrsl/import-from-excel/",""), // url to be replace by url tag
+        pk_id   = trim_id.replace("/","");    
+    document.getElementById("id_model_id").value = pk_id;
+});
+</script>
+
+{% if with_good and converted_items %}
+<h3>Check:</h3>
+<div class="results">
+<table>
+    {% for item in converted_items %}
+    <tr>
+        {% for value in item %}
+        <td><div style="white-space: pre-wrap;">{{ value }}</div></td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+</div>
+{% endif %}
+</BODY>
+</HTML>

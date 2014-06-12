@@ -1,0 +1,18 @@
+{% extends 'admin/change_form.html' %}
+{% load url from future %}
+{% load i18n admin_static admin_modify %}
+{% block extrahead %}
+{{ block.super }}
+<script type="text/javascript">
+$(document).ready(function() {	        
+    $("#id_province").change(function() {
+        $.get('{% url "province" %}', { combo1val : $(this).val() }, function(responseData) {        	
+            $("input#id_region").val(responseData.region);            
+            $("input#id_regioncode").val(responseData.regioncode);
+        });
+    });
+
+});          
+
+</script>
+{% endblock %}

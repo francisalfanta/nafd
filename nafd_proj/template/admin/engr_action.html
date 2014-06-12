@@ -1,0 +1,40 @@
+{% load url from future %}
+{% load staticfiles admin_urls extra_filter %}  
+  <div id="engr-action-{{ forloop.counter|cei:logs.number }}" style="font-size:12px;font-family:Arial;">
+  {% if task.status not in 'ISSUANCE OF SOA' %}
+    <div id="engr-choice" class="engr-choice">      
+        <input id="endorse-{{ forloop.counter }}" onclick="hotendorse({{ forloop.counter }})" class="engr-choice engr-choice-endo" type="radio" name="{{ form.prefix }}-engrchoice" value="ENDORSEMENT"/>
+        <label for="endorse">ENDORSEMENT</label>
+        <input id="encode-{{ forloop.counter }}" onclick="hotencode({{ forloop.counter }})"class="engr-choice engr-choice-encode" type="radio" name="{{ form.prefix }}-engrchoice" value="ENCODING"/>
+        <label for="encode">ENCODE</label>
+        <input id="pend-{{ forloop.counter }}" onclick="hotpend({{ forloop.counter }})" class="engr-choice engr-choice-pend" type="radio" name="{{ form.prefix }}-engrchoice" value="PENDING"/>
+        <label for="pend">PENDING</label>            
+    </div>    
+    <!--<div id="endorse-edit">{{ form.endorsementfile }}</div>-->
+    <div id="endorse-edit" style="text-align:center;" >            
+      <span id="upload-btn-{{ forloop.counter }}">        
+        <span onclick="engr_uploadWindow({{ form.id.value }}, '{{ url_args|iriencode }}')" class="upload-link" id="upload-{{ forloop.counter }}">Upload Endorsement file</span>
+        <input id="endorsement-file-{{ forloop.counter|cei:logs.number }}" type="hidden" value="{{ task.endorsementfile }}"/>
+      </span>
+    </div>
+    <div id="encoder-pick">
+        {% for encoder in encoder_list %}
+        <input id="{{encoder}}" type="radio" name="{{ form.prefix }}-current_user" value="{{ encoder.id }}"/><label for="{{ encoder }}">{{ encoder|upper }}</label>
+        {% endfor %}
+    </div>    
+    <div id="pending-choice">       
+        {{ form.pending_desc }}
+    </div> 
+  {% endif %}     
+  </div>
+
+  {% if task.status not in 'EVALUATIONENDORSEMENT' %}
+  <div id="edit-soa">{% if task.stm_count > 0 %}
+                      <a id="edit-soa-{{ forloop.counter|cei:logs.number }}" href="{% url 'admin:ccad_logbook_change' task.id %}?next={% url "logs" url_args|iriencode %}" style="font-size:14; font-weight:bold">Edit Statement of Account</a>
+                    {% else %}
+                      <a id="edit-soa-{{ forloop.counter|cei:logs.number }}" href="{% url 'admin:ccad_soa_add' %}?next={% url "logs" url_args|iriencode %}&log_id={{ task.id }}" style="font-size:14; font-weight:bold">Create Statement of Account</a>
+                    {% endif %}
+  </div>
+  {% endif %}
+       
+

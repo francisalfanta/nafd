@@ -1,0 +1,32 @@
+{% load url from future %}
+  <div id="engr-action-{{ forloop.counter }}" style="font-size:12px;font-family:Arial;">
+    <div id="engr-choice" class="engr-choice">      
+        <input id="endorse-{{ forloop.counter }}" onclick="hotendorse({{ forloop.counter }})" class="engr-choice engr-choice-endo" type="radio" name="{{ form.prefix }}-engrchoice" value="ENDORSEMENT"/>
+        <label for="endorse">ENDORSEMENT</label>
+        <input id="encode-{{ forloop.counter }}" onclick="hotencode({{ forloop.counter }})"class="engr-choice engr-choice-encode" type="radio" name="{{ form.prefix }}-engrchoice" value="ENCODING"/>
+        <label for="encode">ENCODE</label>
+        <input id="pend-{{ forloop.counter }}" onclick="hotpend({{ forloop.counter }})" class="engr-choice engr-choice-pend" type="radio" name="{{ form.prefix }}-engrchoice" value="PENDING"/>
+        <label for="pend">PEND</label>            
+    </div>    
+    <!--<div id="endorse-edit">{{ form.endorsementfile }}</div>-->
+    <div id="endorse-edit" style="text-align:center;" >            
+      <span id="upload-btn-{{ forloop.counter }}">        
+        <span onclick="engr_uploadWindow({{ form.id.value }})" class="upload-link" id="upload-{{ forloop.counter }}">Upload Document</span>
+      </span>
+    </div>
+    <div id="encoder-pick">
+        {% for encoder in encoder_list %}
+        <input id="{{encoder}}" type="radio" name="{{ form.prefix }}-current_user" value="{{ encoder.id }}"/><label for="{{ encoder }}">{{ encoder|upper }}</label>
+        {% endfor %}
+    </div>    
+    <div id="pending-choice">       
+        {{ form.pending_desc }}
+    </div>      
+  </div>
+  <div id="edit-soa">{% if task.soa > 0 %}
+                      <a id="edit-soa-{{ forloop.counter }}" href="{% url 'admin:ccad_soa_change' task.soa %}?next={% url "engr" %}" style="font-size:14; font-weight:bold">Edit Statement of Account</a>
+                    {% else %}
+                      <a id="edit-soa-{{ forloop.counter }}" href="{% url 'admin:ccad_soa_add' %}?next={% url "engr" %}" style="font-size:14; font-weight:bold">Create Statement of Account</a>
+                    {% endif %}
+  </div>        
+

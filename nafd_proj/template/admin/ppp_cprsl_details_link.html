@@ -1,0 +1,10 @@
+{% load staticfiles admin_urls extra_filter %}
+
+{% if "NEW" in task.transtype|upper or "PPP" in task.transtype|upper or "TP" in task.transtype|upper or "DEMO" in task.transtype|upper or "STO" in task.transtype|upper or "RECALL" in task.transtype|upper or "ALL" in task.transtype|upper %}
+<a style="float:left;" onclick="ppp_popupWindow({{ task.id }}, '{{ task.transtype|upper }}')" class="detail-link" id="detail-{{ forloop.counter|cei:logs.number }}" href="" >PPP details</a>
+{% else %}<span style="float:left;">PPP details</span>
+{% endif %} 
+{% if "ALL" in task.transtype|upper or "NEW" in task.transtype|upper or "REN" in task.transtype|upper or "MOD" in task.transtype|upper or "RENMOD" in task.transtype|upper or "SUF" in task.transtype|upper %}
+<a style="float:right;" onclick="cprsl_popupWindow({{ task.id }}, '{{ task.transtype|upper }}')" class="detail-link" id="detail-{{ forloop.counter|cei:logs.number }}" href="" >CP/RSL details</a>
+{% else %}<span style="float:right;">CP/RSL details</span>
+{% endif %}

@@ -1,0 +1,136 @@
+{% extends 'admin/change_form.html' %}
+{% load url from future %}
+{% load i18n admin_static admin_modify %}
+{% block extrahead %}
+{{ block.super }}
+<script type="text/javascript">
+//FRANCIS-->
+(function($){
+$(document).ready(function() {	
+    function whatstation(e){
+        $.get('{% url "nos" %}', { combo1val : $(e).val() }, function(responseData) {
+                var data = responseData,
+                    desc = data.substr(0,data.indexOf(',')),
+                    name = data.substr(desc.length+1,data.length);
+                $("#id_lic_to_operate").val(desc);//append($("<option></option>").html(responseData).val(responseData));
+            //alert(status);
+        });        
+    }
+    function whatsitename(e){
+        $.ajax({
+            url: '{% url "site_details" %}', 
+            data: { combo1val : $(e).val() }, 
+            success: function(responseData) {
+                if (typeof responseData=="object") {
+                    $("#id_sitename_street").val(responseData.street);
+                    $("#id_sitename_city").val(responseData.address.city);
+                    $("#id_sitename_province").val(responseData.address.province);
+                    $("#id_sitename_region").val(responseData.address.regioncode);
+                    $("#id_sitename_longitude").val(responseData.slongitude);
+                    $("#id_sitename_latitude").val(responseData.slatitude);
+                }},
+            //cache: false,
+            //failure: function (request, status, error) {
+            //            alert("Request failed. Please try again later.");
+            //        }                                  
+        });           
+    }
+    function whatsequip(e, active_id){
+        var frqrange = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_freqrange',
+            txrx     = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_txrx',
+            callsign = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_callsign',
+            powerbwe = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_powerbwe',
+            purchase = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_purchase',
+            possess  = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_possess',
+            storage  = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_storage',
+            usage    = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_usagepolarity',
+            antenna  = '#id_LatestRsl_v2_equipment-'+active_id+'-ant_details',            
+            rsl      = '#id_LatestRsl_v2_equipment-'+active_id+'-latestrsl_v2';
+
+        $.get(
+            '{% url "equip_details" %}', 
+            { combo1val : $(e).val() }, 
+            function(responseData) {                
+                if (typeof responseData=="object") {
+                    $(frqrange).val(responseData.freqrange);   
+                    $(txrx).val(responseData.txrx);
+                    $(callsign).val(responseData.callsign);
+                    $(powerbwe).val(responseData.powerbwe);
+                    $(usage).val(responseData.usagepol);
+                    $(purchase).val(responseData.p_purchase);
+                    $(possess).val(responseData.p_possess);
+                    $(storage).val(responseData.storage);
+                    $(antenna).val(responseData.ant_detail);      
+                    //alert('Success ResponseData: '+responseData.freqrange);
+                }          
+            }
+        );
+    }
+    // display content upon load
+    for( var i = 0; i < $('.grp-td.equipment').length; i++ ) {
+        var select_cursor  = '#id_LatestRsl_v2_equipment-'+i+'-equipment';
+        whatsequip(select_cursor, i);
+    }
+    whatstation("#id_class_of_station");
+    whatsitename("#id_sitename");
+    // display content upon event
+    $("#id_class_of_station").change(function() {
+        whatstation(this);
+    });
+    $("#id_sitename").on('change', function() {        
+        if ($("#id_sitename_text").value==undefined) {
+            $("#id_sitename_street").val(null);
+            $("#id_sitename_city").val(null);
+            $("#id_sitename_province").val(null);
+            $("#id_sitename_region").val(null);
+            $("#id_sitename_longitude").val(null);
+            $("#id_sitename_latitude").val(null);            
+        }
+        whatsitename("#id_sitename");                    
+    });  
+    
+    $(".grp-td.equipment").focusin(function() {
+        var that_change = $(this).find('.autocomplete-light-widget')[0].id,
+            leftside = that_change.substr(26),
+            active_id = leftside.substr(0,leftside.indexOf('-')),
+            input_cursor   = '#id_LatestRsl_v2_equipment-'+active_id+'-equipment_text',
+            select_cursor  = '#id_LatestRsl_v2_equipment-'+active_id+'-equipment',
+            frqrange = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_freqrange',
+            txrx     = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_txrx',
+            callsign = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_callsign',
+            powerbwe = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_powerbwe',
+            purchase = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_purchase',
+            possess  = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_possess',
+            storage  = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_storage',
+            usage    = '#id_LatestRsl_v2_equipment-'+active_id+'-equip_usagepolarity',
+            antenna  = '#id_LatestRsl_v2_equipment-'+active_id+'-ant_details',            
+            rsl      = '#id_LatestRsl_v2_equipment-'+active_id+'-latestrsl_v2';
+           
+            //alert('Success ResponseData: '+input_cursor);    
+        $(input_cursor).on("click", function() {             
+            if ($(input_cursor).value==undefined) {
+                $(frqrange).val(null);   
+                $(txrx).val(null);
+                $(callsign).val(null);
+                $(powerbwe).val(null);
+                $(usage).val(null);
+                $(purchase).val(null);
+                $(possess).val(null);
+                $(storage).val(null);
+                $(antenna).val(null);  
+            }
+            //alert('Inside Click(): '+$(input_cursor).val());
+            $(select_cursor).change(function() {
+                //alert('Success ResponseData: '+$(this).val());                
+                whatsequip($(this), active_id);
+            });          
+        });
+    });   
+});          
+})(grp.jQuery);
+</script>
+{% endblock %}
+{% block submit_buttons_bottom %}
+{% include "admin/equipment_save_button.html" %}
+{% endblock %}
+<!--END Submit -->

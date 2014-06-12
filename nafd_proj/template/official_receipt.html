@@ -1,0 +1,25 @@
+{% load extra_filter %}
+{% load humanize %}
+<div class="right-table">
+     <div class="right-table-row">
+         <div class="or-name-field">Official Receipt <span class="colon-field">:</span></div>
+         <div class="or-value-field">
+            {% if cashier_stamp.or_no %}
+            {% for s in instance.id|orno_list %}                
+                <a href="{{ MEDIA_URL}}scan/soa/{{cashier_stamp.date_paid.year}}/{{cashier_stamp.date_paid|date:"M"}}/{{s.soa.official_receipt}}.pdf">{% firstof s.soa.official_receipt|stringformat:"s" 'no Payment' %}</a>
+                {% if not forloop.last %} / {% endif %}
+            {% endfor %}
+            {% else %}
+                {% firstof s.soa.official_receipt|stringformat:"s" 'no Payment' %}
+            {% endif %}
+            </div>
+     </div>
+     <div class="right-table-row">
+         <div class="or-name-field">Amount <span class="colon-field">:</span></div>
+         <div class="or-value-field">P {% firstof cashier_stamp.amount|intcomma '0.00' %}</div>
+     </div>    
+     <div class="right-table-row">
+         <div class="or-name-field">Date Paid <span class="colon-field">:</span></div>
+         <div class="or-value-field">{% firstof cashier_stamp.date_paid|date:"DATE_FORMAT" '-' %}</div>
+     </div>
+</div>

@@ -1,0 +1,181 @@
+{% extends "admin/base_site.html" %}
+<!-- LOADING -->
+{% load url from future %}
+{% load admin_urls%}
+{% load i18n grp_tags log %}
+{% load static from staticfiles %}
+
+{% block extrahead %}    
+    <style type="text/css">        
+        span.sq{
+            -moz-border-radius: 25px/25px;
+            -webkit-border-radius: 25px 25px;
+            border-radius: 25px/25px;
+            border:solid 5px; 
+            width:25px;
+            height:15px;   
+        }
+    </style>
+{% endblock %}
+<!-- JAVASCRIPTS -->
+{% block javascripts %}
+    {{ block.super }}   
+{% endblock %}
+
+<!-- COLTYPE/BODYCLASS-- >
+{% block bodyclass %}dashboard{% endblock %}
+{% block content-class %}content-grid{% endblock %}
+
+<!-- BREADCRUMBS -->
+{% block breadcrumbs %}
+    <ul class="grp-horizontal-list">
+        <li>{% trans "Home" %}</li>   
+        <li><a href="/logs/index">{% trans "Logs" %}</a></li> 
+        <!--<li><a href="/logs/logbook_manual">{% trans "Manual" %}</a></li>-->
+    </ul>
+{% endblock %}
+{% block content_title %}
+    {% if title %}
+        <header><h1>{{ title }}</h1></header>
+    {% endif %}
+{% endblock %}
+
+<!-- CONTENT -->
+{% block content %}
+    {% block messages %}
+        {% if messages %}
+        <ul class="messagelist">{% for message in messages %}
+          <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+        {% endfor %}</ul>
+        {% endif %}
+    {% endblock messages %}
+        
+    <div class="g-d-c" style="width: 100% !important;">
+        <div class="g-d-12 g-d-f">
+            {% for app in app_list %}
+                <div class="grp-module" id="app_{{ app.name|lower }}">
+                    <h2><a href="{{ app.app_url }}" class="grp-section">this {% trans app.name %}</a></h2>
+                    {% for model in app.models %}
+                        <div class="grp-row">
+                            {% if model.admin_url %}
+                                <a href="{{ model.admin_url }}"><strong>{{ model.name }}</strong></a>
+                            {% else %}
+                                <strong>{{ model.name }}</strong>
+                            {% endif %}
+
+                            {% ifequal request.user.is_superuser False %}
+                                {% if 'ccad.engr_view_logbook' in perms %}
+                                {% if model.add_url or model.admin_url and 'ccad.engr_view_logbook' not in perms and 'ccad.engr_oview_equipment' not in perms and 'ccad.engr_oview_rsl' not in perms  %}                             
+                                    <ul class="grp-actions">
+                                        {% if model.add_url %}
+                                            <li class="grp-add-link">
+                                                <a href="{{ model.add_url }}">{% trans "Add" %}</a>
+                                            </li>
+                                        {% endif %}
+                                        {% if model.admin_url %}
+                                            <li class="grp-change-link">
+                                                <a href="{{ model.admin_url }}">{% trans "Change" %}</a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>                                 
+                                {% endif %} 
+                                {% endif %}  
+
+
+                                {% if 'ccad.encoder_view_logbook' in perms %}
+                                {% if model.add_url or model.admin_url and 'ccad.encoder_view_logbook' not in perms %}
+                                    <ul class="grp-actions">
+                                        {% if model.add_url %}
+                                            <li class="grp-add-link">
+                                                <a href="{{ model.add_url }}">{% trans "Add" %}</a>
+                                            </li>
+                                        {% endif %}
+                                        {% if model.admin_url %}
+                                            <li class="grp-change-link">
+                                                <a href="{{ model.admin_url }}">{% trans "Change" %}</a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                {% endif %} 
+                                {% endif %} 
+                                {% if 'ccad.sec_view_logbook' in perms %}
+                                {% if model.add_url or model.admin_url and 'ccad.sec_view_logbook' not in perms %}
+                                    <ul class="grp-actions">
+                                        {% if model.add_url %}
+                                            <li class="grp-add-link">
+                                                <a href="{{ model.add_url }}">{% trans "Add" %}</a>
+                                            </li>
+                                        {% endif %}
+                                        {% if model.admin_url %}
+                                            <li class="grp-change-link">
+                                                <a href="{{ model.admin_url }}">{% trans "Change" %}</a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                {% endif %}
+                                {% endif %}
+                            {% else %}
+                                <ul class="grp-actions">
+                                    {% if model.add_url %}
+                                        <li class="grp-add-link">
+                                            <a href="{{ model.add_url }}">{% trans "Add" %}</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if model.admin_url %}
+                                        <li class="grp-change-link">
+                                            <a href="{{ model.admin_url }}">{% trans "Change" %}</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>     
+                            {% endifequal %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% empty %}
+                <p>{% trans "You don´t have permission to edit anything." %}</p>
+            {% endfor %}
+        </div>
+        <div class="kpi-report" style="width:620px !important; float: left; height:1600px;">
+           {% include 'kpi_stat.html' %}
+        </div>
+         <div class="g-d-6 g-d-c" style="float: right;">
+            <div id="kpi-legend" class="g-d-6 g-d-f grp-module" style="margin-bottom: 20px;">
+            <h2 class="grp-section">KPI Legend</h2>
+            <div id="ppp" class="grp-row"><span class="sq" style="color:lightgreen"></span><strong>Permit to Purchase/Possess</strong></div>            
+            <div id="cp" class="grp-row"><span class="sq" style="color:gold"></span><strong>Construction Permit</strong></div>
+            <div id="rsl" class="grp-row"><span class="sq" style="color:lightblue"></span><strong>Radio Station License</strong></div>
+            <div id="rsl" class="grp-row"><span class="sq" style="color:yellow"></span><strong>Modification RSL</strong></div>
+            <div id="sto" class="grp-row"><span class="sq" style="color:silver"></span><strong>Permit for Storage</strong></div>
+            <div id="tp-demo" class="grp-row"><span class="sq" style="color:orange"></span><strong>Temporary Permit</strong></div>
+            <div id="tp-demo" class="grp-row"><span class="sq" style="color:violet"></span><strong>Demo Permit</strong></div>
+            <div id="tp-demo" class="grp-row"><span class="sq" style="color:brown"></span><strong>Duplicate RSL</strong></div>
+            
+            </div>
+            <div class="grp-module" id="grp-recent-actions-module">
+                <h2>{% trans 'Recent Actions' %}</h2>
+                <div class="grp-module">
+                    <h3>{% trans 'My Actions' %}</h3>
+                    {% get_admin_log 10 as admin_log for_user user %}
+                    {% if not admin_log %}
+                        <div class="grp-row"><p>{% trans 'None available' %}</p></div>
+                    {% else %}
+                        <ul class="grp-listing-small">
+                            {% for entry in admin_log %}
+                                <li class="grp-row{% if entry.is_addition %} grp-add-link{% endif %}{% if entry.is_change %} grp-change-link{% endif %}{% if entry.is_deletion %} grp-delete-link{% endif %}">
+                                    {% if entry.is_deletion %}
+                                        <span>{{ entry.object_repr }}</span>
+                                    {% else %}
+                                        <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+                                    {% endif %}
+                                    <span class="grp-font-color-quiet">{% filter capfirst %}{% trans entry.content_type.name %}{% endfilter %}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>             
+    </div>
+
+{% endblock %}
+

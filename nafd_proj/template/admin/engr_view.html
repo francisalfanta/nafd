@@ -1,0 +1,88 @@
+{% extends "ccad_dicsd_base.html" %}
+{% load staticfiles admin_urls extra_filter %}
+{% load url from future %}
+
+<!DOCTYPE html>
+<html>
+{% block custom_header %}
+{{ block.super }}
+<head>
+    <title>CCAD DICSD | Logbook</title>   
+    {% include "header.html" %}
+    <link rel="stylesheet" type="text/css" href="{% static "css/encoder_view.css" %}" />
+    <script type="text/javascript" src="{% static "js/engr_view.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/common.js" %}"></script>
+    <style type="text/css">#cancel-action{margin-top:-28px;}</style>      
+    <script>
+        function refreshTable(){
+            $('#ccad-activity').load('/ccad/engractivity', function(responseTxt, statusTxt, xhr){
+                if(statusTxt=="success")
+                    // Assignment || for study
+                    //$('#content').slideDown('slow').animate({opacity: 10.0}, 5000).slideUp('slow');
+                    renderProgressbar({{ max_record }}, {{ pbar_kvalue }});
+                    $('#pending-choice, #encoder-pick, #endorse-edit, #cancel-action').hide();
+            });
+            // Temporarily disable during development
+            setInterval(refreshTable, 30000);
+        }
+        $(function(){
+            renderProgressbar({{ max_record }}, {{ pbar_kvalue }});            
+            $('#pending-choice, #encoder-pick, #endorse-edit, #cancel-action').hide();            
+            //$('#engr-action').buttonset();
+            //$('.cancel-action').button();             
+            //refreshTable();
+            $( ".clear-endorsement" ).button({
+                icons: {
+                    primary: "ui-icon-cancel"
+                },
+                text: false
+            });
+            $(".cancel-action").button({
+                icons: {
+                    primary: "ui-icon-cancel"
+                }
+            });
+            $(".upload-link").button({
+                icons: {
+                    // ui-icon to be replaced
+                    primary: "ui-icon-upload"
+                }
+            });
+            $("#submit").button();
+        }); 
+     
+    </script>   
+</head>
+{% endblock custom_header %}
+{% block content %}
+{{ block.super }}
+<body>   
+<div id="ccad-activity"> 
+    {% include "ccad_activity_engr.html" %}
+</div>
+{% endblock content %}
+
+{% block custom_footer %}
+{{ block.super }}
+<div class="pagination" style="width:820px; text-align:center">
+    <br>
+    <span class="step-links">
+        {% if logs.has_previous %}
+            <a href="?page={{ logs.previous_page_number }}" class="btn-style">previous</a>
+        {% endif %}
+        &nbsp
+        <span class="current btn-style">
+            Page {{ logs.number }} of {{ logs.paginator.num_pages }}.
+        </span>
+        &nbsp
+        {% if logs.has_next %}
+            <a href="?page={{ logs.next_page_number }}"  class="btn-style">next</a>
+        {% endif %}
+    </span>
+</div>   
+{% endblock custom_footer %}
+</body>
+</html>
+
+
+

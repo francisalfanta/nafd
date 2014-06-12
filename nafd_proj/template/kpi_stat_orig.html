@@ -1,0 +1,90 @@
+{% load static from staticfiles %}
+<head>
+<script src="{% static 'ccad/jquery.js' %}" type="text/javascript"></script>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<script type="text/javascript">google.load('visualization', '1', {packages: ['corechart']});</script>
+<script type="text/javascript">   
+  $(document).ready(function(){ 
+  {% for staff_name, staff_id in params.items %}  
+    $.ajax({
+          url: "{% url user_kpi %}",
+          data: { user_stat: {{staff_name}} },
+          success: function(responseData) { 
+            if (typeof responseData=="object") {                      
+              var data = new google.visualization.arrayToDataTable([
+                ['Type', 'Processed Items', { role: 'style' }, 'Processed beyond Due Date', { role: 'style'}],
+                ['PPP', responseData['PPP_ontime'], 'lightgreen', responseData['PPP_due'], 'red'],
+                ['CP', responseData['CP_ontime'], 'gold', responseData['CP_due'], 'red'], 
+                ['RSL', responseData['RSL_ontime'], 'lightblue', responseData['RSL_due'], 'red'],
+                ['MOD', responseData['MOD_ontime'], 'yellow', responseData['MOD_due'], 'red' ], 
+                ['STO', responseData['RECALL_ontime'], 'silver', responseData['RECALL_due'], 'red'],
+                ['TP', responseData['TP_ontime'], 'orange', responseData['TP_due'], 'red'],
+                ['DEMO', responseData['DEMO_ontime'], 'violet', responseData['DEMO_due'], 'red'],
+                ['DUP', responseData['DUP_ontime'], 'brown', responseData['DUP_due'], 'red']]);
+              google.setOnLoadCallback(drawVisualization(data, {{staff_name}}));
+            }
+          }
+    });
+  {% endfor %} 
+
+  });  
+  var wrapper;
+  function drawVisualization(xdata, id) { 
+    // Create and draw the visualization.   
+    var visual = 'visualization-'+id.toString();
+        //chart = new google.visualization.BarChart(document.getElementById(visual));
+        wrapper = new google.visualization.ChartWrapper({
+            chartType: 'BarChart',
+            dataTable: xdata,
+            options: {
+                      width:600, height:140,
+                      vAxis: {title: null, maxValue: 3500},
+                      hAxis: {title: null},
+                      
+                      animation: {easing: 'in'},
+                      axisTitlesPosition: "out",
+                      chartArea:{left:0,top:0, right:0, width:"100%",height:"100%"},
+                      focusTarget: "category",
+                      fontSize: 12,
+                      fontName: "Tahoma",
+                      legend: {position: 'none'},
+                      //orientation: "vertical"
+                      series: [{color: 'black', visibleInLegend: false}, {}, {},
+                               {color: 'red', visibleInLegend: false}],
+                      isStacked: true,
+                      backgroundColor: '#eee',
+                     },
+            containerId: visual
+        });
+        google.visualization.events.addListener(wrapper, 'ready', function() {
+          // grab a few details before redirecting
+          alert('test');
+          google.visualization.events.addListener(wrapper.getChart(), 'select', function() {
+            chartObject = wrapper.getChart();
+             alert(xdata.getValue(chartObject.getSelection()[0].row, 0));
+            //alert(xdata.getValue(chartObject.getSelection()[0].column, 0));
+          });
+        });
+
+        wrapper.draw();
+    }   
+ 
+</script>  
+</head>
+{% for staff_key, staff_val in params.items %}
+  {% for staff_name, staff_id in staff_val.items %}
+      <div class="g-d-6 grp-module"  style="width:100%">        
+        <h2 class="grp-section" id="visualization-section-{{staff_key}}" >
+          {{staff_name|capfirst}}
+          <span id="active-item-{{staff_key}}" style="margin-left: 20px;font-size:13px;">Total value:</span>
+          <span title="Processed for the current year: {{staff_id.staff_kpi_target.processed}}
+KPI target was set to {{staff_id.staff_kpi_target.target}}" id="processed-target-item-{{staff_key}}" style="float:right;font-size:13px;">
+            {{staff_id.staff_kpi_target.processed}}/{{staff_id.staff_kpi_target.target}}
+          </span>
+        </h2>
+        <!--Google Bar Chart -->        
+        <div  class="grp-row" id="visualization-{{staff_key}}" style="width: 620px; height: 160px;">
+        </div>        
+      </div>     
+  {% endfor %}    
+{% endfor %}

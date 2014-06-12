@@ -1,0 +1,29 @@
+{% extends "detail_page_ppp.html" %}
+{% load staticfiles %}
+
+{% block ext_header %}
+	<style type="text/css">
+	#uploadfilewidget {margin-top	: 10px; width		:110px;	}	
+  #id_docfile{width:450px;}
+	.upload-field{width:80px; margin-left:460px; margin-top:-30px;}
+	#status-info{margin-top:20px;}
+  .errorlist{ margin-top:-10px; width:200px;height:10px; margin-bottom:5px}
+  .help_text{margin:-2px 0 0 465px;}
+  #uploadform{margin-bottom:0;}
+  #status-info, #status{margin-top:10px;}
+  .right-low-tble{margin-top:20px;}
+	</style>
+{% endblock ext_header %}
+
+{% block uploadfile %}
+  <div id="uploadfilewidget" class="right-low-table-choosefile">
+  	<!-- Upload form. Note enctype attribute! -->
+  	<form id="uploadform" action="/logs/encoder/upload/{{instance.id}}" method="post" enctype="multipart/form-data">{% csrf_token %}     
+  		<div class="left-table-row">{{ docfileform.docfile }}</div>      
+  		<div class="upload-field">
+    		<input type="submit" value="Upload"/>
+  		</div>
+      <div class="left-table-row help_text">{{ docfileform.docfile.help_text }} : ms-word doc only</div>
+    </form>
+  </div>
+{% endblock uploadfile %}

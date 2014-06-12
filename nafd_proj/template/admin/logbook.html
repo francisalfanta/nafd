@@ -1,0 +1,141 @@
+{% extends "admin/base_site.html" %}
+<!-- LOADING -->
+{% load staticfiles admin_urls extra_filter %}
+{% load url from future %}
+{% load admin_urls%}
+{% load i18n grp_tags log %}
+
+{% block title %}CCAD DICSD | Logbook{% endblock %}
+{% block extrahead %}
+    <script src="{{ STATIC_URL }}ajaxuploader/js/fileuploader.js" ></script>
+    <link href="{{ STATIC_URL }}ajaxuploader/css/fileuploader.css" media="screen" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="{% static "css/encoder_view.css" %}" />  
+    <style type="text/css">
+        #cancel-action{margin-top:-28px;}
+        span.sq{
+            -moz-border-radius: 25px/25px;
+            -webkit-border-radius: 25px 25px;
+            border-radius: 25px/25px;
+            border:solid 5px; 
+            width:25px;
+            height:15px;   
+        }
+    </style>  
+{% endblock %}
+<!-- JAVASCRIPTS FMA-->
+{% block javascripts %}
+    {{ block.super }}
+     {% if 'ccad.engr_view_logbook' in perms %}
+        <script type="text/javascript" src="{% static "admin/js/engr_view.js" %}"></script>
+    {%endif%}
+     {% if 'ccad.encoder_view_logbook' in perms %}
+        <script type="text/javascript" src="{% static "admin/js/encoder_view.js" %}"></script>
+    {%endif%}
+    {% if 'ccad.sec_view_logbook' in perms %}
+        <script type="text/javascript" src="{% static "admin/js/secretary_view.js" %}"></script>
+    {%endif%}
+     {% if 'ccad.rb_view_logbook' in perms %}
+        <script type="text/javascript" src="{% static "admin/js/rbsecretary_view.js" %}"></script>
+    {%endif%}
+
+    <script type="text/javascript" src="{% static "admin/js/common.js" %}"></script>
+    <script type="text/javascript">
+      var jQuery = django.jQuery;      
+      jQuery(function(){
+        renderProgressbar({{ max_record }}, {{ pbar_kvalue }});            
+        jQuery('#pending-choice, #encoder-pick, #endorse-edit, #cancel-action').hide();            
+        //jQuery('#engr-action').buttonset();
+        //jQuery('.cancel-action').button();             
+        //refreshTable({{ max_record }}, {{ pbar_kvalue }});
+        jQuery( ".clear-endorsement" ).button({            
+            icons: {
+                primary: "ui-icon-cancel"
+            },
+            text: false
+        });
+        jQuery(".cancel-action").button({
+            icons: {
+                primary: "ui-icon-cancel"
+            }
+        });
+        jQuery(".upload-link").button({
+            icons: {
+                // ui-icon to be replaced
+                primary: "ui-icon-upload"
+            }
+        });
+        jQuery("#submit").button();
+      });       
+    </script>  
+{% endblock %}
+<!-- COLTYPE/BODYCLASS-- >
+{% block bodyclass %}dashboard{% endblock %}
+{% block content-class %}content-grid{% endblock %}
+<!-- BREADCRUMBS -->
+{% block breadcrumbs %}
+    <ul class="grp-horizontal-list">
+        <li><a href="/admin">{% trans "Home" %}</a></li>
+        <li>{% trans "Logs" %}</li>       
+    </ul>
+{% endblock %}
+{% block content_title %}
+    {% if title %}
+        <header><h1>{{ title }}</h1></header>
+    {% endif %}
+{% endblock %}
+<!-- CONTENT -->
+{% block content %}
+    <div class="g-d-c" style="width:1200px">
+        <div class="g-d-6 g-d-f grp-module">
+            <h2 class="grp-section">Application Status</h2>             
+                <div id="new_task" class="grp-row"><a href="/logs/new" class="lnk"><strong>My Task</strong></a></div>
+                <div id="processing" class="grp-row"><a href="/logs/processing" class="lnk"><strong>Processing</strong></a></div>
+                <div id="pending" class="grp-row"><a href="/logs/pending" class="lnk"><strong>Pending</strong></a></div>
+                <div id="unassign_task" class="grp-row"><a href="/logs/unassign" class="lnk"><strong>Unassign</strong></a></div>
+                <div id="task_complete" class="grp-row"><a href="/logs/taskdone" class="lnk"><strong>Completed</strong></a></div>                 
+        </div>
+
+         <div class="g-d-6 g-d-f grp-module">
+            <h2 class="grp-section">Task Legend </h2>             
+                <div id="new_task" class="grp-row"><span class="sq" style="color:lightgreen"></span><strong>Current</strong></div>
+                <div id="processing" class="grp-row"><span class="sq" style="color:orange"></span><strong>Upcoming</strong></div>
+                <div id="pending" class="grp-row"><span class="sq" style="color:yellow"></span><strong>Returning work</strong></div>
+                <div id="unassign_task" class="grp-row"><span class="sq" style="color:red"></span><strong>Pending</strong></div>
+                <div id="task_complete" class="grp-row"><span class="sq" style="color:gray"></span><strong>Finished</strong></div>
+        </div>
+        <div id="logiframe" class="g-centered">
+        {% block logbook %} 
+            {########### for choosing group template ##############}
+            <div id="ccad-activity"> 
+            {% if 'ccad.engr_view_logbook' in perms %}Engr View{% include "admin/ccad_activity_engr.html" %}{% endif %}
+            
+            {% if 'ccad.encoder_view_logbook' in perms %}Encoder View{% include "admin/ccad_activity.html" %}{% endif %}
+            
+            {% if 'ccad.sec_view_logbook' in perms %}Network and Facitilies Division Chief View{% include "admin/ccad_activity_sec.html" %}{% endif %}
+            
+            {% if 'ccad.rb_view_logbook' in perms %}Regulation Branch Director Secretary View{% include "admin/ccad_activity_rbsec.html" %}{% endif %}
+            </div>
+            {########### end of choosing group template ###########}
+            {% block custom_footer %}
+            {{ block.super }}
+            <div class="pagination" style="width:1200px; text-align:center">
+            <br>
+                <span class="step-links">
+                    {% if logs.has_previous %}
+                        <a href="?page={{ logs.previous_page_number }}" class="btn-style">previous</a>
+                    {% endif %}
+                        &nbsp
+                        <span class="current btn-style">
+                        Page {{ logs.number }} of {{ logs.paginator.num_pages }}.
+                        </span>
+                        &nbsp
+                    {% if logs.has_next %}
+                        <a href="?page={{ logs.next_page_number }}"  class="btn-style">next</a>
+                    {% endif %}
+                </span> 
+            </div>
+            {% endblock custom_footer %}
+        {% endblock logbook %}
+        </div>
+    </div>
+{% endblock %}

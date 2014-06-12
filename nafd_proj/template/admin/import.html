@@ -1,0 +1,54 @@
+<!doctype html>
+    <head>
+        <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js" ></script>-->
+        <script src="{{ STATIC_URL }}js/jquery-1.9.1.js" ></script>
+        <script src="{{ STATIC_URL }}ajaxuploader/js/fileuploader.js" ></script>
+        <link href="{{ STATIC_URL }}ajaxuploader/css/fileuploader.css" media="screen" rel="stylesheet" type="text/css" />
+        <script>       
+        
+            function refreshParent() {
+                window.opener.location.reload();
+            } 
+            function createUploader(pk){
+                //var el = '#'+ elem_id,            
+                var uploader = new qq.FileUploader({
+                    element: $('#file-uploader')[0],
+                    //element: $(el)[0],
+                    action: "{% url "ajax_upload" %}",
+                    debug: true,
+                    multiple: false,                    
+                    onComplete : function(id, fileName, responseJSON) {
+                    if(responseJSON.filename) {
+                        var endorsementfile = '{{instance.endorsementfile}}';
+                        alert("success!");        
+
+                        if (endorsementfile.length > 0) 
+                        {  // refresh when endorsementfile exist
+                            window.onunload = refreshParent;    
+                        }                        
+                        window.close();                        
+                    } else {
+                        alert("upload failed!");                     
+                    }                    
+                    },                    
+                    params: {
+                    'csrf_token': '{{ csrf_token }}',
+                    'csrf_name': 'csrfmiddlewaretoken',
+                    'csrf_xname': 'X-CSRFToken',
+                    'pk': pk,
+                    },           
+                });
+            };
+            $(function(){
+            //$(document).ready(function(){
+                createUploader({{instance.id}});
+            });          
+        </script>
+    </head>
+<body>    
+    <div id="file-uploader">
+    </div>   
+</body>
+</html>
+
+
