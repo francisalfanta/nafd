@@ -1,0 +1,412 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction &mdash; NAFD Logbook 0.5.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/cloud.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Noticia+Text|Open+Sans|Droid+Sans+Mono" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/jquery.cookie.js"></script>
+    <script type="text/javascript" src="_static/cloud.js"></script>
+    <link rel="top" title="NAFD Logbook 0.5.0 documentation" href="index.html" />
+    <link rel="next" title="User’s Manual" href="user_manual.html" />
+    <link rel="prev" title="Welcome to NAFD Logbook’s documentation!" href="index.html" /> 
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <div class="relbar-top">
+        
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="user_manual.html" title="User’s Manual"
+             accesskey="N">next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to NAFD Logbook’s documentation!"
+             accesskey="P">previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">NAFD Logbook 0.5.0 documentation</a> &raquo;</li>
+ 
+      </ul>
+    </div>
+    </div>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="parts-of-logbook-page">
+<h2>Parts of Logbook page<a class="headerlink" href="#parts-of-logbook-page" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="navigation-bar">
+<h3>Navigation bar<a class="headerlink" href="#navigation-bar" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><a class="reference internal image-reference" href="_images/navigation.png"><img alt="Logbook Navigation bars" class="align-left" src="_images/navigation.png" style="width: 225px; height: 178px;" /></a>
+<div class="custom container">
+<p><strong>Task</strong></p>
+<p>A list of task currently assign to you.
+The tasks were arranged as latest entry on top.</p>
+<p><strong>Processing</strong></p>
+<p>A list of task received for processing.
+This contains the task assign to you and other member’s task.
+The lists are arranged by self priority.</p>
+<p><strong>Pending</strong></p>
+<p>This are lists of application with pending status.</p>
+<p><strong>Unassign</strong></p>
+<p>This are lists of application with no personnel in charge.</p>
+<p><strong>Completed</strong></p>
+<p>This are applications that were completed for the last 30 days.</p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="key-performance-indicator">
+<h3>Key Performance Indicator<a class="headerlink" href="#key-performance-indicator" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><a class="reference internal image-reference" href="_images/kpi_legend.png"><img alt="KPI Legend" class="align-left" src="_images/kpi_legend.png" style="width: 227px; height: 260px;" /></a>
+<div class="custom container">
+<p><strong>Permit to Purchase/Possess</strong></p>
+<p>This is a color <em>light green</em> progress bar located on the top most.</p>
+<p><strong>Construction Permit</strong></p>
+<p>This is a color <em>gold</em> progress bar located as the second top most.</p>
+<p><strong>Radio Station License</strong></p>
+<p>This is a color <em>light blue</em> progress bar located below Construction Permit bar.</p>
+<p><strong>Modification RSL</strong></p>
+<p>This is a color <em>yellow</em> progress bar located below RSL bar.</p>
+<p><strong>Permit for Storage</strong></p>
+<p>This is a color <em>silver</em> progress bar located below Modification RSL bar.</p>
+<p><strong>Temporary Permit</strong></p>
+<p>This is a color <em>orange</em> progress bar located below Permit for Storage.</p>
+<p><strong>Demo Permit</strong></p>
+<p>This is a color <em>violet</em> progress bar located below Permit for Temporary Permit.</p>
+<p><strong>Duplicate RSL</strong></p>
+<p>This is a color <em>brown</em> progress bar located below Permit for Demo Permit.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Color <em>Red</em> progress bar means the application was processed beyond specified due date.</p>
+</div>
+</div>
+<a class="reference internal image-reference" href="_images/kpi_graph_title.png"><img alt="KPI Graph Title" class="align-left" src="_images/kpi_graph_title.png" style="width: 628px; height: 34px;" /></a>
+<dl class="docutils">
+<dt><strong>Graph Title</strong></dt>
+<dd><p class="first"><em>Username</em> - (e.g. <em>Erwin</em>) the progress report for this user.</p>
+<p><em>Total value</em></p>
+<blockquote class="last">
+<div><p>dividend or numerator (e.g. <em>286</em>) - the total number of units/stations processed so far.</p>
+<p>divisor or denominator(e.g. <em>5000</em>) - the user&#8217;s over-all KPI target for that year.</p>
+</div></blockquote>
+</dd>
+</dl>
+</div></blockquote>
+</div>
+<div class="section" id="log-entry">
+<h3>Log Entry<a class="headerlink" href="#log-entry" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><a class="reference internal image-reference" href="_images/log_entry.png"><img alt="Log Entry" class="align-center" src="_images/log_entry.png" style="width: 838px; height: 158px;" /></a>
+<div class="custom container">
+<p><strong>Control No</strong></p>
+<blockquote>
+<div><ul>
+<li><p class="first">Each Applications contain <em>unique number</em>.</p>
+</li>
+<li><p class="first"><em>Status</em></p>
+<blockquote>
+<div><ul class="simple">
+<li>The current progress of the application.</li>
+<li>It is currently assign to whom.</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Task</strong></p>
+<p>The task column contains essential information to distinctly identify the contents of each application.</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><em>Applicant name</em></p>
+</li>
+<li><p class="first"><em>Type of application</em></p>
+</li>
+<li><p class="first"><em>Number of units</em> applied</p>
+</li>
+<li><p class="first"><em>Number of Station License</em> applied</p>
+</li>
+<li><p class="first"><em>PPP details</em></p>
+<blockquote>
+<div><ul class="simple">
+<li>Information details for Permit to Purchase/Possess if already uploaded to the database.</li>
+<li>Clickable if the type of application falls within PPP and Storage.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first"><em>CP/RSL details</em></p>
+<blockquote>
+<div><ul class="simple">
+<li>Information details for Construction Permit and Radio Station License if already uploaded to the database.</li>
+<li>Clickable if the type of application falls within CP and RSL.</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Action</strong></p>
+<blockquote>
+<div><ul>
+<li><p class="first">An upload button or select button for the users to finished the task.</p>
+</li>
+<li><p class="first">This varies from the current progress of the application and user permission doing the task.</p>
+</li>
+<li><p class="first">It also has links for uploaded file.</p>
+</li>
+<li><p class="first"><a class="reference internal" href="nafd_glossary.html#term-due-date"><em class="xref std std-term">Due date</em></a> can be seen in the lower right of the column.</p>
+<blockquote>
+<div><ul class="simple">
+<li>The application processing allotted time frame computed according to CSC Citizen Charter.</li>
+<li>Holidays and weekend are not included when counting processing time.</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p><strong>Progress Bar</strong></p>
+<ul class="simple">
+<li>Bar indicator for application progress report.</li>
+</ul>
+<a class="reference internal image-reference" href="_images/task_legend.png"><img alt="Log Entry" class="align-center" src="_images/task_legend.png" style="width: 225px; height: 172px;" /></a>
+<ul>
+<li><p class="first">Color coding</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><em>Orange</em></dt>
+<dd><p class="first last">indicates an incoming application task.</p>
+</dd>
+<dt><em>Green</em></dt>
+<dd><p class="first last">indicates currently processed by you.</p>
+</dd>
+<dt><em>Yellow</em></dt>
+<dd><p class="first last">indicates the application task will return to you.</p>
+</dd>
+<dt><em>Red</em></dt>
+<dd><p class="first last">indicates pending application according to the reason noted by the Engr.</p>
+</dd>
+<dt><em>Gray</em></dt>
+<dd><p class="first last">indicates the application has completed the process according to the Division work flow.</p>
+</dd>
+</dl>
+</div></blockquote>
+</li>
+</ul>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="nafd-work-flow-and-permission-level">
+<h3>NAFD <a class="reference internal" href="nafd_glossary.html#term-work-flow"><em class="xref std std-term">Work flow</em></a> and Permission level<a class="headerlink" href="#nafd-work-flow-and-permission-level" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="6%" />
+<col width="48%" />
+<col width="17%" />
+<col width="13%" />
+<col width="15%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">ID</th>
+<th class="head">Task</th>
+<th class="head">Secretary</th>
+<th class="head">Encoder</th>
+<th class="head">Engineer</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>1</td>
+<td><a class="reference internal" href="engr.html#checklist-reqd"><em>Checking requirements</em></a></td>
+<td></td>
+<td></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td><a class="reference internal" href="engr.html#checklist-soa"><em>Issuance of SOA</em></a></td>
+<td></td>
+<td></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td><a class="reference internal" href="secretary.html#checklist-payment"><em>Payment</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td><a class="reference internal" href="engr.html#checklist-eval"><em>Evaluation</em></a></td>
+<td></td>
+<td></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-even"><td>5</td>
+<td><a class="reference internal" href="engr.html#checklist-endorse"><em>Endorsement</em></a></td>
+<td></td>
+<td></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-odd"><td>6</td>
+<td><a class="reference internal" href="encoder.html#checklist-encoding"><em>Encoding</em></a></td>
+<td></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td>7</td>
+<td><a class="reference internal" href="engr.html#checklist-review"><em>Review</em></a></td>
+<td></td>
+<td></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-odd"><td>8</td>
+<td><a class="reference internal" href="engr.html#checklist-sign"><em>Signature</em></a></td>
+<td></td>
+<td></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-even"><td>9</td>
+<td><a class="reference internal" href="secretary.html#checklist-chief"><em>Chief Signature</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>10</td>
+<td><a class="reference internal" href="secretary.html#checklist-direct"><em>Director Signature</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td>11</td>
+<td><a class="reference internal" href="secretary.html#checklist-cashier"><em>Cashier Stamp</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>12</td>
+<td><a class="reference internal" href="secretary.html#checklist-release"><em>Release to Secretariat</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+</div>
+<div class="section" id="csc-citizen-charter">
+<h3>CSC Citizen Charter<a class="headerlink" href="#csc-citizen-charter" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div>pass</div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper"><div class="sphinxlocaltoc">
+    <h3><a href="index.html">Page contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Introduction</a><ul>
+<li><a class="reference internal" href="#parts-of-logbook-page">Parts of Logbook page</a><ul>
+<li><a class="reference internal" href="#navigation-bar">Navigation bar</a></li>
+<li><a class="reference internal" href="#key-performance-indicator">Key Performance Indicator</a></li>
+<li><a class="reference internal" href="#log-entry">Log Entry</a></li>
+<li><a class="reference internal" href="#nafd-work-flow-and-permission-level">NAFD <tt class="docutils literal"><span class="pre">Work</span> <span class="pre">flow</span></tt> and Permission level</a></li>
+<li><a class="reference internal" href="#csc-citizen-charter">CSC Citizen Charter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div class="sphinxprev">
+    <h4>Previous page</h4>
+    <p class="topless"><a href="index.html"
+                          title="Previous page">&larr; Welcome to NAFD Logbook&#8217;s documentation!</a></p>
+  </div>
+  <div class="sphinxnext">
+    <h4>Next page</h4>
+    <p class="topless"><a href="user_manual.html"
+                          title="Next page">&rarr; User&#8217;s Manual</a></p>
+  </div>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/intro.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="relbar-bottom">
+        
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="user_manual.html" title="User’s Manual"
+             >next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to NAFD Logbook’s documentation!"
+             >previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">NAFD Logbook 0.5.0 documentation</a> &raquo;</li>
+ 
+      </ul>
+    </div>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2014, Engr. Francis Thomas M. Alfanta.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+    <!-- cloud_sptheme 1.4 -->
+  </body>
+</html>

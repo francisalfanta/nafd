@@ -1,0 +1,422 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Engineer &mdash; NAFD Logbook 0.5.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/cloud.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Noticia+Text|Open+Sans|Droid+Sans+Mono" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/jquery.cookie.js"></script>
+    <script type="text/javascript" src="_static/cloud.js"></script>
+    <link rel="top" title="NAFD Logbook 0.5.0 documentation" href="index.html" />
+    <link rel="up" title="User’s Manual" href="user_manual.html" />
+    <link rel="next" title="Developer’s Manual" href="dev_manual.html" />
+    <link rel="prev" title="Encoder" href="encoder.html" /> 
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body>
+    <div class="relbar-top">
+        
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="dev_manual.html" title="Developer’s Manual"
+             accesskey="N">next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="encoder.html" title="Encoder"
+             accesskey="P">previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">NAFD Logbook 0.5.0 documentation</a> &raquo;</li>
+
+          <li><a href="user_manual.html" accesskey="U">User&#8217;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>
+    </div>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="engineer">
+<h1>Engineer<a class="headerlink" href="#engineer" title="Permalink to this headline">¶</a></h1>
+<p>About <a class="reference internal" href="nafd_glossary.html#term-nafd"><em class="xref std std-term">NAFD</em></a> Engineer Job Description:</p>
+<div class="section" id="nafd-work-flow">
+<h2><a class="reference internal" href="nafd_glossary.html#term-nafd"><em class="xref std std-term">NAFD</em></a> <a class="reference internal" href="nafd_glossary.html#term-work-flow"><em class="xref std std-term">Work flow</em></a><a class="headerlink" href="#nafd-work-flow" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><table border="1" class="docutils">
+<colgroup>
+<col width="8%" />
+<col width="69%" />
+<col width="22%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">ID</th>
+<th class="head">Task</th>
+<th class="head">Engineer</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>1</td>
+<td><a class="reference internal" href="#checklist-reqd"><em>Checking requirements</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td><a class="reference internal" href="#checklist-soa"><em>Issuance of SOA</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td><a class="reference internal" href="secretary.html#checklist-payment"><em>Payment</em></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td><a class="reference internal" href="#checklist-eval"><em>Evaluation</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-even"><td>5</td>
+<td><a class="reference internal" href="#checklist-endorse"><em>Endorsement</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-odd"><td>6</td>
+<td><a class="reference internal" href="encoder.html#checklist-encoding"><em>Encoding</em></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td>7</td>
+<td><a class="reference internal" href="#checklist-review"><em>Review</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-odd"><td>8</td>
+<td><a class="reference internal" href="#checklist-sign"><em>Signature</em></a></td>
+<td><a class="reference internal" href="_images/check.png"><img alt="Check" src="_images/check.png" style="width: 25px; height: 25px;" /></a></td>
+</tr>
+<tr class="row-even"><td>9</td>
+<td><a class="reference internal" href="secretary.html#checklist-chief"><em>Chief Signature</em></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>10</td>
+<td><a class="reference internal" href="secretary.html#checklist-direct"><em>Director Signature</em></a></td>
+<td></td>
+</tr>
+<tr class="row-even"><td>11</td>
+<td><a class="reference internal" href="secretary.html#checklist-cashier"><em>Cashier Stamp</em></a></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>12</td>
+<td><a class="reference internal" href="secretary.html#checklist-release"><em>Release to Secretariat</em></a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<div class="section" id="checking-requirements">
+<span id="checklist-reqd"></span><h3>Checking requirements<a class="headerlink" href="#checking-requirements" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>This is a segment in work flow to verify the completeness of the application filed by the clients.</p>
+<p>Once you are done click the check box and press submit button.</p>
+<a class="reference internal image-reference" href="_images/check_requirement.png"><img alt="Status: Checking requirements" class="align-center" src="_images/check_requirement.png" style="width: 862px; height: 153px;" /></a>
+</div></blockquote>
+</div>
+<div class="section" id="issuance-of-soa">
+<span id="checklist-soa"></span><h3>Issuance of <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a><a class="headerlink" href="#issuance-of-soa" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>This is a segment in work flow to issue an order of payment or statement of account to the requesting applicant.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Information stated in this segment will be reflected to Logbook details such as total number of units, station, first station, last station, transaction type and service type.</p>
+</div>
+<p>This section describe how to <a class="reference internal" href="#new-soa"><em>Upload SOA</em></a>. If you already uploaded the <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a>, attach the SOA control no in Logbook page by clicking <strong>Logbook Control No</strong>.</p>
+<p>Once you are done uploading SOA click the check box and press submit button.</p>
+<a class="reference internal image-reference" href="_images/issuance.png"><img alt="Status: Issuance of SOA" class="align-center" src="_images/issuance.png" style="width: 861px; height: 148px;" /></a>
+</div></blockquote>
+</div>
+<div class="section" id="evaluation">
+<span id="checklist-eval"></span><h3>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>This is a segment in work flow responsible for evaluating application if it is for endorsement, for encoding or for pending.</p>
+<p><em>Options:</em></p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Endorsement</dt>
+<dd><ul class="first last simple">
+<li>if the next process is endorsement please upload the letter of endorsement.</li>
+</ul>
+</dd>
+<dt>Encoding</dt>
+<dd><ul class="first simple">
+<li>when all requirements are attached and ready for encoding.</li>
+<li>select Encoder to process the application.</li>
+</ul>
+<p><em>Option:</em></p>
+<blockquote class="last">
+<div><dl class="docutils">
+<dt>Re-assign</dt>
+<dd><ul class="first last simple">
+<li>After assigning an Encoder and in the process of Encoding, Engineer has option to select other available Encoder.</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</dd>
+<dt>Pending</dt>
+<dd><ul class="first last simple">
+<li>this will be selected if the applicant fail to comply the requirement after accepting the application.</li>
+<li>state the reason why the application is in this situation</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+<p>Once you are done selecting the next process click the check box and press submit button.</p>
+<a class="reference internal image-reference" href="_images/evaluation.png"><img alt="Status: Evaluation" class="align-center" src="_images/evaluation.png" style="width: 861px; height: 156px;" /></a>
+</div></blockquote>
+</div>
+<div class="section" id="endorsement">
+<span id="checklist-endorse"></span><h3>Endorsement<a class="headerlink" href="#endorsement" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>In this segment of work flow the application is not present in <a class="reference internal" href="nafd_glossary.html#term-nafd"><em class="xref std std-term">NAFD</em></a>.</p>
+<p><em>Option:</em></p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Recall Endorsement</dt>
+<dd><ul class="first last simple">
+<li>the process to replace/delete the endorsement letter submitted.</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+<p>Once you are done uploading the endorsement letter click the check box and press submit button.</p>
+<a class="reference internal image-reference" href="_images/endorsement.png"><img alt="Status: Endorsement" class="align-center" src="_images/endorsement.png" style="width: 862px; height: 158px;" /></a>
+</div></blockquote>
+</div>
+<div class="section" id="review">
+<span id="checklist-review"></span><h3>Review<a class="headerlink" href="#review" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>This is a segment in work flow responsible for reviewing the printed and uploaded application.</p>
+<p><em>Option:</em></p>
+<blockquote>
+<div><dl class="docutils">
+<dt>For Correction</dt>
+<dd><ul class="first last simple">
+<li>the process to return the printed and the uploaded application for re-encoding due to correction.</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+<p>Once you are done verifying both printed and uploaded information, click the check box and press submit button.</p>
+<a class="reference internal image-reference" href="_images/review.png"><img alt="Status: Review" class="align-center" src="_images/review.png" style="width: 865px; height: 142px;" /></a>
+</div></blockquote>
+</div>
+<div class="section" id="signature">
+<span id="checklist-sign"></span><h3>Signature<a class="headerlink" href="#signature" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>This is a segment in work flow where assign Engineer approved the printed documents.</p>
+<p>Once you are done signing the printed documents click the check box and press submit button.</p>
+<a class="reference internal image-reference" href="_images/signature.png"><img alt="Status: Signature" class="align-center" src="_images/signature.png" style="width: 865px; height: 148px;" /></a>
+</div></blockquote>
+</div>
+<div class="section" id="upload-soa">
+<span id="new-soa"></span><h3>Upload <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a><a class="headerlink" href="#upload-soa" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><p>Instruction how to upload Statement of Account from MS-Excel file.</p>
+<ol class="arabic">
+<li><p class="first">Click the <em>Create Statement of Account</em> found in Action column. This will forward the page to <em>Adding Statement of Accounts</em>.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="_images/add_soa_page.png"><img alt="Add Statement of Account" class="align-center" src="_images/add_soa_page.png" style="width: 719px; height: 489px;" /></a>
+</div></blockquote>
+</li>
+<li><dl class="first docutils">
+<dt>Fill up the necessary information such as:</dt>
+<dd><ul class="first last">
+<li><dl class="first docutils">
+<dt>Statement of Account Control No.</dt>
+<dd><dl class="first docutils">
+<dt>If New:</dt>
+<dd><ul class="first last simple">
+<li>leave blank if your creating new entry.</li>
+</ul>
+</dd>
+<dt>If Old:</dt>
+<dd><ul class="first last simple">
+<li>indicate original Control No. if your editing the already assigned <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a> control no.</li>
+</ul>
+</dd>
+</dl>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a> Control No. format (e.g. <em>2014-01-8888</em>): &#8216;<em>year</em> - <em>month numerical value</em> - <em>four digit counter</em>&#8216;. The counter will automatically reset to 0 everyone month.</p>
+</div>
+</dd>
+</dl>
+</li>
+<li><p class="first">Date Issued</p>
+</li>
+<li><p class="first">Public Telecom Entity</p>
+</li>
+<li><p class="first">Application Type</p>
+</li>
+<li><p class="first">Service</p>
+</li>
+<li><p class="first">Validity from</p>
+</li>
+<li><p class="first">Validity to</p>
+</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Then click <em>Save</em> button once done. The supplied information will serve as the header and footer for <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a>.</p>
+<blockquote>
+<div><div class="admonition hint">
+<p class="first admonition-title">Hint</p>
+<p class="last"><em>Import Details PPP~RSL</em> and <em>Import Details Demo~Dup</em> is now shown.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">Click the necessary button for your application. A pop-up window will appear with an <em>Load data</em> button.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><em>Import Details Demo~Dup</em> is for uploading MS-Excel format for Demo or Duplicate application only. While <em>Import Details PPP~RSL</em> is for uploading Permit to Purchase/Possess, Construction Permit and Radio Station License order of payment.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">Click the <em>Load data</em> button to select your MS-Excel pre-formated for <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a>.</p>
+<blockquote>
+<div><div class="admonition caution">
+<p class="first admonition-title">Caution</p>
+<p class="last">Please use the pre-formatted <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a> to correctly upload the information.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">Verify the data for completeness before checking &#8220;<em>is good</em>&#8221; box.</p>
+</li>
+<li><p class="first">Click the <em>Load data</em> again to finalized the upload of information to the main page <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a>.</p>
+<blockquote>
+<div><div class="admonition hint">
+<p class="first admonition-title">Hint</p>
+<p class="last">Please check the last row on Sitename or Address of your MS-Excel file if it matches the uploaded last row in <a class="reference internal" href="nafd_glossary.html#term-soa"><em class="xref std std-term">SOA</em></a> details.</p>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">Click <em>Save</em> button once all information are properly supplied.</p>
+<blockquote>
+<div><div class="admonition hint">
+<p class="first admonition-title">Hint</p>
+<p class="last">If you want to save then create new entry click <em>Save and add another</em>. If you want to save then continue working click <em>Save and continue editing</em></p>
+</div>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper"><div class="sphinxlocaltoc">
+    <h3><a href="index.html">Page contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Engineer</a><ul>
+<li><a class="reference internal" href="#nafd-work-flow"><tt class="docutils literal"><span class="pre">NAFD</span></tt> <tt class="docutils literal"><span class="pre">Work</span> <span class="pre">flow</span></tt></a><ul>
+<li><a class="reference internal" href="#checking-requirements">Checking requirements</a></li>
+<li><a class="reference internal" href="#issuance-of-soa">Issuance of <tt class="docutils literal"><span class="pre">SOA</span></tt></a></li>
+<li><a class="reference internal" href="#evaluation">Evaluation</a></li>
+<li><a class="reference internal" href="#endorsement">Endorsement</a></li>
+<li><a class="reference internal" href="#review">Review</a></li>
+<li><a class="reference internal" href="#signature">Signature</a></li>
+<li><a class="reference internal" href="#upload-soa">Upload <tt class="docutils literal"><span class="pre">SOA</span></tt></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div class="sphinxprev">
+    <h4>Previous page</h4>
+    <p class="topless"><a href="encoder.html"
+                          title="Previous page">&larr; Encoder</a></p>
+  </div>
+  <div class="sphinxnext">
+    <h4>Next page</h4>
+    <p class="topless"><a href="dev_manual.html"
+                          title="Next page">&rarr; Developer&#8217;s Manual</a></p>
+  </div>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/engr.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="relbar-bottom">
+        
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="dev_manual.html" title="Developer’s Manual"
+             >next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="encoder.html" title="Encoder"
+             >previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">NAFD Logbook 0.5.0 documentation</a> &raquo;</li>
+
+          <li><a href="user_manual.html" >User&#8217;s Manual</a> &raquo;</li> 
+      </ul>
+    </div>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright 2014, Engr. Francis Thomas M. Alfanta.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+    <!-- cloud_sptheme 1.4 -->
+  </body>
+</html>
