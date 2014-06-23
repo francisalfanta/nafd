@@ -2069,7 +2069,7 @@ class Letter_LogBook(models.Model):
     dateEntry       = models.DateField(auto_now=True, null=True, verbose_name="Date Entry", blank=True) 
     letter_from     = models.CharField(max_length=150, blank=True, null=True, verbose_name='From', help_text='For non-Carrier Applications')
     letter_to       = models.CharField(max_length=150, blank=True, null=True, verbose_name='To', help_text='For non-Carrier Applications')
-    subject         = models.CharField(max_length=150, blank=True, null=True, verbose_name='Subject', help_text='For non-Carrier Applications')
+    subject         = models.CharField(max_length=250, blank=True, null=True, verbose_name='Subject', help_text='For non-Carrier Applications')
 
     objects         = models.Manager() # default manager
     logbook_objects = LogBook_counter() # custom manager
