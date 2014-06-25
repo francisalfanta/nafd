@@ -2695,6 +2695,7 @@ class MasterRsl(models.Model):
     spare_equip_serial  = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip")
     spare_equip_serial2 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip2")
     spare_equip_serial3 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip3")
+    spare_equip_serial4 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip4")
     sn1             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#1")
     sn2             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#2")
     sn3             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#3")
@@ -3164,6 +3165,12 @@ class MasterRsl(models.Model):
     rx41_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
     rx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
     rx42_max        =models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    old_sitename    = models.CharField(max_length=300, blank=True, null=True, verbose_name="Old Site")
+    or_no3          = models.DecimalField(null=True, verbose_name="Official Receipt #3", max_digits=10, decimal_places=0, blank=True)
+    date_paid3      = models.DateField(null=True, verbose_name="Date Paid", blank=True)
+    amount3         = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
+    logbook_cn      = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Logbook CN')
+    record_cn       = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Record CN')
     
     philaddress   = models.ForeignKey(PhilAddress,  blank=True, null=True, on_delete=models.SET_NULL)
     carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL)  
@@ -3298,6 +3305,7 @@ class LatestRsl(models.Model):
     spare_equip_serial = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip")
     spare_equip_serial2 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip2")
     spare_equip_serial3 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip3")
+    spare_equip_serial4 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip4")
     sn1             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#1")
     sn2             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#2")
     sn3             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#3")
@@ -3772,9 +3780,12 @@ class LatestRsl(models.Model):
     old_make_SP1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp1")
     old_make_SP2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp2")
     old_make_SP3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp3") 
+    old_sitename     = models.CharField(max_length=300, blank=True, null=True, verbose_name="Old Site")
    
     philaddress   = models.ForeignKey(PhilAddress,  blank=True, null=True, on_delete=models.SET_NULL)
-    carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL)  
+    carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL) 
+    logbook_cn      = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Logbook CN')
+    record_cn       = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Record CN') 
 
     class Meta:
         db_table            = u'latest_rsl'
