@@ -36,10 +36,20 @@ $(document).ready(function(){
 </form>
 <script type="text/javascript">
 window.addEventListener('load', function () {   
-    var url     = window.location.href,        
-        trim_id = url.replace("http://localhost/logs/latestrsl/import-from-excel/",""), // url to be replace by url tag
+    var url     = window.location.href;
+
+        if (url.indexOf("nafd.ntc.gov.ph")>0){
+            var lh =  "nafd.ntc.gov.ph";
+        }   else if (url.indexOf("nafd")>0){     
+            var lh =  "nafd";
+        }   else if (url.indexOf("192.168.111.100")>0){     
+            var lh =  "192.168.111.100";
+        }  else {
+            var lh =  "localhost";
+        }
+    var trim_id = url.replace("http://"+lh+"/logs/latestrsl/import-from-excel/",""),
         pk_id   = trim_id.replace("/","");    
-    document.getElementById("id_model_id").value = pk_id;
+    document.getElementById("id_model_id").value = parseInt(pk_id);
 });
 </script>
 

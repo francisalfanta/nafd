@@ -33,11 +33,20 @@ $(document).ready(function(){
 </form>
 <script type="text/javascript">
 window.addEventListener('load', function () {   
-    var url     = window.location.href,        
-        //trim_id = url.replace("http://rb-nf-db:8000/logs/soa_detail/import-ppp-rsl/",""), // url to be replace by url tag
-        trim_id = url.replace("http://localhost/logs/soa_detail/import-ppp-rsl/",""), // url to be replace by url tag
+    var url     = window.location.href;        
+        
+        if (url.indexOf("nafd.ntc.gov.ph")>0){
+            var lh =  "nafd.ntc.gov.ph";
+        }   else if (url.indexOf("nafd")>0){     
+            var lh =  "nafd";
+        }   else if (url.indexOf("192.168.111.100")>0){     
+            var lh =  "192.168.111.100";
+        }  else {
+            var lh =  "localhost";
+        }
+    var trim_id = url.replace("http://"+lh+"localhost/logs/soa_detail/import-ppp-rsl/",""), // url to be replace by url tag
         pk_id   = trim_id.replace("/","");
-    document.getElementById("id_model_id").value = pk_id;
+    document.getElementById("id_model_id").value = parseInt(pk_id);
 });
 </script>
 {% if with_good and converted_items %}
