@@ -15,12 +15,12 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE':   'django.db.backends.oracle',  # Add 'django.db.backends.postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME':     'xe',                         # 'postgres'Or path to database file if using sqlite3.
+        'ENGINE':   'django.db.backends.mysql',    #'django.db.backends.oracle',  # Add 'django.db.backends.postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME':     'ccad',                         # 'postgres'Or path to database file if using sqlite3.
         'USER':     'ccad',                       # 'postgres'Not used with sqlite3.
         'PASSWORD': 'ccad',                       # 'admin'Not used with sqlite3.
-        'HOST':     'localhost',                  # 'localhost'Set to empty string for localhost. Not used with sqlite3.
-        'PORT':     '1521',                       # '5432'Set to empty string for default. Not used with sqlite3.
+        'HOST':     '127.0.0.1',                  # 'localhost'Set to empty string for localhost. Not used with sqlite3.
+        'PORT':     '3306',                       # '5432'Set to empty string for default. Not used with sqlite3.
     }
 }
 
@@ -187,7 +187,7 @@ LOGGING = {
 }
 ### output settings ####
 
-print 'SITE ROOT: ', SITE_ROOT
+print 'MYSQL SITE ROOT: ', SITE_ROOT
 print 'STATIC ROOT', STATIC_ROOT
 print 'STATIC_URL', STATIC_URL
 

@@ -2575,7 +2575,7 @@ class KPI(models.Model):
         verbose_name        = "KPI"
 #ok!
 class MasterRsl(models.Model):
-    id              = models.AutoField(primary_key=True) 
+    id              = models.AutoField(primary_key=True)     
     status          = models.CharField(max_length=20, choices=STATUS_CHOICES, blank=True, null=True, verbose_name="Status")
     rslno           = models.CharField(max_length=50, blank=True, null=True, verbose_name="License No")
     issued          = models.DateField(null=True, verbose_name="Date Issued", blank=True)
@@ -2723,8 +2723,8 @@ class MasterRsl(models.Model):
     freqrange       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Freq Range")
     validity_from   = models.DateField(null=True, verbose_name="Valid from", blank=True)
     validity_to     = models.DateField(null=True, verbose_name="Valid until", blank=True)
-    extension       = models.DateField(null=True, verbose_name="Extended Until", blank=True)
-    remarks         = models.CharField(max_length=2000, blank=True, null=True, verbose_name="Remarks")
+    extension       = models.DateField(null=True, verbose_name="Extended Until", blank=True)     
+    remarks         = models.TextField(max_length=2000, blank=True, null=True, verbose_name="Remarks")
     or_no           = models.DecimalField(null=True, verbose_name="Official Receipt #1", max_digits=10, decimal_places=0, blank=True)
     date_paid       = models.DateField(null=True, verbose_name="Date Paid", blank=True)
     amount          = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)
@@ -3176,17 +3176,18 @@ class MasterRsl(models.Model):
     possess_all     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess All")
     
     philaddress   = models.ForeignKey(PhilAddress,  blank=True, null=True, on_delete=models.SET_NULL)
-    carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL)  
+    carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL) 
 
     class Meta:
         db_table            = u'master_rsl'
         verbose_name_plural = "Master RSL"
-        ordering            = ["issued"]
-    def __unicode__(self):
-        return self.rslno
+    #    ordering            = ["issued"]
+    #def __unicode__(self):
+    #    return self.rslno
 #ok!
 class LatestRsl(models.Model):
     id              = models.AutoField(primary_key=True)  #id              = models.DecimalField(primary_key=True, decimal_places=0, max_digits=10)
+    
     logbook         = models.ForeignKey(LogBook, null=True, blank= True)
     status          = models.CharField(max_length=20, blank=True, null=True, verbose_name="Status")
     rslno           = models.CharField(max_length=50, blank=True, null=True, verbose_name="License No")
@@ -3338,6 +3339,7 @@ class LatestRsl(models.Model):
     validity_to     = models.DateField(null=True, verbose_name="Valid until", blank=True)
     extension       = models.DateField(null=True, verbose_name="Extended Until", blank=True)
     remarks         = models.CharField(max_length=2000, blank=True, null=True, verbose_name="Remarks")
+    
     or_no           = models.DecimalField(null=True, verbose_name="Official Receipt #1", max_digits=10, decimal_places=0, blank=True)
     date_paid       = models.DateField(null=True, verbose_name="Date Paid", blank=True)
     amount          = models.DecimalField(null=True, verbose_name="Amount", max_digits=10, decimal_places=0, blank=True)

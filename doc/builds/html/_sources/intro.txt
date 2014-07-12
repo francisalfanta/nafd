@@ -208,12 +208,29 @@ NAFD :term:`Work flow` and Permission level
 CSC Citizen Charter
 ^^^^^^^^^^^^^^^^^^^
 
-	pass
+	**OFFICE ORDER NO. 71-03-2011**
+
+		In the interest of service and in line with the Commission's thrust to facilitate
+		the processing of permits, certificates and licenses filed with the Regulation
+		Branch, all applications shall be acted upon/processed as follows:
+
+		1. For bulk application with no more than 20 Radio Station Licenses (RSL).
 
 
+	========  =================================  =======================================
+	Division  Types of Application               Processing Time   
+	========  =================================  =======================================
+	\         \                                  (upon receipt of FAN/FAS issued by FMD)
+	NAFD      New RSL                            Three (3) working days
+	\         RSL for Renewal with Modification  Three (3) working days                          
+	\         Construction Permit                Three (3) working days
+	\         Permit to Purchase/Possess         One (1) working day
+	\         Demo Permit                        Three (3) working days
+	\         Certificate of Registration        Three (3) working days
+	\         (Trunk Radio)                      \ 
+	========  =================================  =======================================
 
-
-
-
+	    2. Bulk applications with more than 20 RSLs, shall be processed within 10 
+	       working days upon receipt of complete requirements and FAN/FAS.
 
 
