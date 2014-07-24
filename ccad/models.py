@@ -1962,6 +1962,7 @@ class SOA(models.Model):
     rsl_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of RSL Units')
     mod_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Mod Units')
     stor_units      = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Storage Units')
+    demo_fee        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='Demo fee')
 
 
     objects         = models.Manager() # default manager
@@ -2042,7 +2043,7 @@ class SOA_detail(models.Model):
     sur_suf_percent = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Surcharge SUF Percent')
     sur_suf         = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Surcharge SUF')
     duplicate_fee   = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Duplicate fee')
-    #demo_fee        = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Demo fee')
+    demo_fee        = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=10, default=0, verbose_name='Demo fee')
 
     class Meta:
         verbose_name_plural = "Statement of Account Details"
@@ -3900,9 +3901,63 @@ def LogBook_controlNo(sender, instance, **kwargs):
     if not instance.pk: 
         c = cfile_counter(next_counter)       # format the counter
         # return a formated Control No
-        instance.controlNo = str(now.year)+'-'+cmonth_counter()+'-'+c+'-'+apptype
-    else:       
+        instance.controlNo = str(now.year)+'-'+cmonth_counter()+'-'+c+'-'+apptype    
+    else:       # during update
         instance.stm_count = Statements.objects.filter(logbook=instance.pk).count()
+        # added 07-23-2014      
+        if instance.status  == 'CHECKING REQUIREMENTS':
+            instance.encoder_status = 2;
+            instance.engr_status  = 0.1;
+            instance.chief_status = 2;        
+        elif instance.status == 'ISSUANCE OF SOA':
+            instance.encoder_status = 2;
+            instance.engr_status  = 0.2;
+            instance.chief_status = 2;        
+        elif instance.status == 'PAYMENT':
+            instance.encoder_status = 2;
+            instance.engr_status  = 1.5;
+            instance.chief_status = 0.1;          
+        elif instance.status == 'EVALUATION':
+            instance.encoder_status = 2;
+            instance.engr_status  = 0.4;
+            instance.chief_status = 2;
+        elif instance.status == 'ENDORSEMENT': 
+            instance.encoder_status = 2;
+            instance.engr_status  = 0.5;
+            instance.chief_status = 0.2;          
+        elif instance.status == 'ENCODING':
+            instance.encoder_status = 1;
+            instance.engr_status  = 2;
+            instance.chief_status = 2;          
+        elif instance.status == 'REVIEW':
+            instance.encoder_status = 1.5;
+            instance.engr_status = 0.7;
+            instance.chief_status = 2;              
+        elif instance.status == 'SIGNATURE':
+            instance.encoder_status = 3;
+            instance.engr_status  = 0.8;
+            instance.chief_status = 0.3;
+        elif instance.status == 'CHIEF SIGNATURE':
+            instance.encoder_status = 3;
+            instance.engr_status  = 2.5;
+            instance.chief_status = 0.4;
+        elif instance.status == 'DIRECTOR SIGNATURE':          
+            instance.encoder_status = 3;
+            instance.engr_status  = 2.7;
+            instance.chief_status = 0.5;
+        elif instance.status == 'CASHIER STAMP':
+            instance.encoder_status = 3;
+            instance.engr_status  = 2.9;
+            instance.chief_status = 0.6;
+        elif instance.status == 'RELEASE TO SECRETARIAT':      
+            instance.encoder_status = 3;
+            instance.engr_status  = 0.9;
+            instance.chief_status = 0.7;          
+        elif instance.status == 'TASK COMPLETED':            
+            instance.encoder_status = 4;
+            instance.engr_status  = 4;
+            instance.chief_status = 4;
+        # end added 07-23-2014        
 #ok!
 # temporary disable while uploading previous SOA
 @receiver(pre_save, sender=SOA)

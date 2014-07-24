@@ -15,12 +15,12 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE':   'django.db.backends.mysql',    #'django.db.backends.oracle',  # Add 'django.db.backends.postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME':     'ccad',                         # 'postgres'Or path to database file if using sqlite3.
-        'USER':     'ccad',                       # 'postgres'Not used with sqlite3.
-        'PASSWORD': 'ccad',                       # 'admin'Not used with sqlite3.
-        'HOST':     '127.0.0.1',                  # 'localhost'Set to empty string for localhost. Not used with sqlite3.
-        'PORT':     '3306',                       # '5432'Set to empty string for default. Not used with sqlite3.
+        'ENGINE':   'django.db.backends.mysql',   # Add 'django.db.backends.oracle', 'django.db.backends.postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME':     'ccad',                       # 'xe',         # 'postgres'Or path to database file if using sqlite3.
+        'USER':     'ccad',                       # 'ccad',       #  postgres'    Not used with sqlite3.
+        'PASSWORD': 'ccad',                       # 'ccad',       #  admin'       Not used with sqlite3.
+        'HOST':     '127.0.0.1',                  # 'localhost',  # 'localhost'Set to empty string for localhost. Not used with sqlite3. 
+        'PORT':     '3306',                       # '1521',       # '5432'Set to empty string for default. Not used with sqlite3.
     }
 }
 

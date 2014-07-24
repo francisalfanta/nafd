@@ -501,7 +501,7 @@ def logbook(request, rb_filterby=None):
                         except ObjectDoesNotExist:
                             print "Either the LogBook_audit or User doesn't exist."
                             currentuser = None
-                        #instance.current_user = currentuser                                                                           # verified correct and running smoothly                                
+                        #instance.current_user = currentuser                                                                           # verified correct and running smoothly                                                       
                     instance.save()
                     ## checking for task completeness
                     if instance.status == 'TASK COMPLETED':
