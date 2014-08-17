@@ -2,6 +2,7 @@ from django import http
 
 import autocomplete_light
 from ccad.models import *
+from django.db.models import Max, Q
 #from ccad.admin import DirectorListFilter
 from django.core.urlresolvers import reverse
 '''
@@ -161,7 +162,7 @@ autocomplete_light.register(Statements, StatementsAutocomplete)
 class NAFD_User_groups_DirAutocomplete(autocomplete_light.AutocompleteModelBase):
 	model = NAFD_USER_GROUPS
 	final_list = list()
-    	encoder_list = NAFD_USER_GROUPS.objects.select_related().filter(group__name='Director')
+    	encoder_list = NAFD_USER_GROUPS.objects.select_related().filter(Q(group__name='Director') | Q(group__name='OIC - Director'))
     	for x in encoder_list:
     	    final_list.append(x.nafd_user.id)
 	choices = NAFD_User.objects.filter(pk__in=final_list)

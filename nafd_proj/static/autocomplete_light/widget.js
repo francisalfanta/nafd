@@ -1,4 +1,4 @@
-(function($){
+var $ = django.jQuery;
 /*
 Widget complements Autocomplete by enabling autocompletes to be used as
 value holders. It looks very much like Autocomplete in its design. Thus, it
@@ -415,4 +415,3 @@ $(document).ready(function() {
         }
     });
 });
-})(grp.jQuery);

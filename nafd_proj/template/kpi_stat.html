@@ -14,16 +14,16 @@ function init () {
             if (typeof responseData=="object") {                      
                 var data = new google.visualization.arrayToDataTable([
                     ['Type', 'Processed Items', { role: 'style' }, 'Processed beyond Due Date', { role: 'style'}],
-                    ['PPP', responseData['PPP_ontime'], 'lightgreen', responseData['PPP_due'], 'red'],
-                    ['CP', responseData['CP_ontime'], 'gold', responseData['CP_due'], 'red'], 
-                    ['RSL', responseData['RSL_ontime'], 'lightblue', responseData['RSL_due'], 'red'],
-                    ['MOD', responseData['MOD_ontime'], 'yellow', responseData['MOD_due'], 'red' ], 
-                    ['STO', responseData['RECALL_ontime'], 'silver', responseData['RECALL_due'], 'red'],
-                    ['TP', responseData['TP_ontime'], 'orange', responseData['TP_due'], 'red'],
-                    ['DEMO', responseData['DEMO_ontime'], 'violet', responseData['DEMO_due'], 'red'],
-                    ['DUP', responseData['DUP_ontime'], 'brown', responseData['DUP_due'], 'red']
+                    ['PPP', Math.round(responseData['PPP_ontime']), 'lightgreen', Math.round(responseData['PPP_due']), 'red'],
+                    ['CP', Math.round(responseData['CP_ontime']), 'gold', Math.round(responseData['CP_due']), 'red'], 
+                    ['RSL', Math.round(responseData['RSL_ontime']), 'lightblue', Math.round(responseData['RSL_due']), 'red'],
+                    ['MOD', Math.round(responseData['MOD_ontime']), 'yellow', Math.round(responseData['MOD_due']), 'red' ], 
+                    ['STO', Math.round(responseData['RECALL_ontime']), 'silver', Math.round(responseData['RECALL_due']), 'red'],
+                    ['TP', Math.round(responseData['TP_ontime']), 'orange', Math.round(responseData['TP_due']), 'red'],
+                    ['DEMO', Math.round(responseData['DEMO_ontime']), 'violet', Math.round(responseData['DEMO_due']), 'red'],
+                    ['DUP', Math.round(responseData['DUP_ontime']), 'brown', Math.round(responseData['DUP_due']), 'red']
                 ]);
-                drawVisualization(data, {{staff_name}});
+                drawVisualization(data, {{staff_name}});                
             }
         }
     });
@@ -56,6 +56,7 @@ function drawVisualization(xdata, id) {
                     isStacked: true,
                     backgroundColor: '#eee',
                    },
+          //view: { columns: [0,4] },
           containerId: visual
       });
       google.visualization.events.addListener(wrapper, 'ready', function() {

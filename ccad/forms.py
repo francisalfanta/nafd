@@ -1003,3 +1003,17 @@ class EquipRackForm(autocomplete_light.ModelForm):
     equip_sitename      = forms.CharField(required=False, label="Sitename", widget=forms.TextInput(attrs={'style':'width:190px; background: rgb(238, 238, 238); border-color: rgb(238, 238, 238);', 'autocomplete':'on',}))       
 ## end     
 
+class SuggestionboxForm(autocomplete_light.ModelForm):
+    title       = forms.CharField(label="Title", widget=forms.TextInput(attrs={'style':'width:610px;', }), required=False)
+    remark     = forms.CharField(label="Remark", widget=forms.Textarea(), required=False)
+    
+    class Meta:
+        model = Suggestion_box
+        widgets = autocomplete_light.get_widgets_dict(Suggestion_box)
+
+class DocFormatsForm(autocomplete_light.ModelForm):
+    title       = forms.CharField(label="Title", widget=forms.TextInput(attrs={'style':'width:610px;', }), required=False)    
+    
+    class Meta:
+        model = DocFormats
+        widgets = autocomplete_light.get_widgets_dict(DocFormats)

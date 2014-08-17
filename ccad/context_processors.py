@@ -9,6 +9,7 @@ RequestContext.
 
 from ccad.models import *
 from datetime import datetime
+from decimal import *
 
 def freeze(d):
     if isinstance(d, dict):
@@ -26,7 +27,9 @@ def nafd_staff(request):
         export_data[i] = 0     	
 
   	apt      		 = App_type.objects.all()  	
-    staff_list 	 = NAFD_User.objects.filter(Q(groups__name='Encoder')|Q(groups__name='Engr'), ~Q(groups__name='NFD Chief'), Q(is_active=1))
+    staff_list 	 = NAFD_User.objects.filter(#Q(groups__name='Encoder')|Q(groups__name='Engr'),
+                                            Q(groups__name='NAFD Personnel', is_active=1),
+                                            ~Q(groups__name='NAFD Chief'))
 
     for staff in staff_list:        
         #print 'staff entry: ', staff.id
@@ -51,7 +54,7 @@ def nafd_staff(request):
                                             THEN sappt.ppp_units \
                                           END) "items" \
                                         FROM ccad_app_type appt, \
-                                          ( SELECT DISTINCT(sl.controlNo), \
+                                          ( SELECT DISTINCT sl.controlNo, \
                                             sappt_apptid, \
                                             sl.ppp_units, \
                                             sl.const_fee, \
@@ -85,12 +88,19 @@ def nafd_staff(request):
         # segregate by Application Type
         for rec in apt2:
             if rec.trans_type in include_only:
-                export_data[rec.trans_type]=rec.units
+                if rec.units:
+                    export_data[rec.trans_type]=rec.units.normalize()
+                    #print 'contain rec.units: ', rec.units
+                else:
+                    export_data[rec.trans_type]=Decimal(0)
+                    #print 'no rec.units: ', rec.units
         # get total
         for i in include_only:
             if export_data[i] ==None:
-                export_data[i] = 0
-            export_data.update(total=export_data['total'] + export_data[i])
+                export_data[i] = Decimal(0)
+                #print 'no rec.units: ', rec.units
+            export_data.update(total=export_data['total'] + Decimal(export_data[i]).normalize())
+            #print 'export_data[i]: ', export_data[i]
 
         try:
             user_info = NAFD_User.objects.get(pk=staff.id)

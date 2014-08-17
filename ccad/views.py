@@ -1,5 +1,6 @@
 import os
-from datetime import date
+import calendar
+from datetime import date, datetime, timedelta
 from django.conf import settings
 
 from django.core.urlresolvers import reverse
@@ -37,8 +38,6 @@ from django.middleware.csrf import get_token
 from ajaxuploader.views import AjaxFileUploader
 from ajaxuploader.backends.local import LocalUploadBackend
 from django.core.files.base import File, ContentFile
-
-from datetime import datetime
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -262,7 +261,7 @@ def logbook(request, rb_filterby=None):
     task_list = None
     sec_task = ['PAYMENT', 'ENDORSEMENT', 'DIRECTOR SIGNATURE', 'CASHIER STAMP', 'RELEASE TO SECRETARIAT']
 
-    encoder_list = NAFD_User.objects.filter(groups__name='Encoder', is_active=1)    ## for engr action choosing an encoder
+    encoder_list = NAFD_User.objects.filter(groups__name='Encoder', is_active=1).filter(groups__name='NAFD Personnel')    ## for engr action choosing an encoder
     engr_list = NAFD_User.objects.filter(groups__name='Engr',is_active=1)           ## for chief action choosing an engr
     rb_group = Group.objects.filter(user__username__startswith=request.user)        ## for choosing template between groups    
     try:
@@ -291,13 +290,24 @@ def logbook(request, rb_filterby=None):
         order_in = 'controlNo'
         task_list = LogBook.objects.order_by('controlNo').filter(status='CHIEF SIGNATURE')
 
+    ### 2 months records prior ###
+    ldays = calendar.mdays
+    if calendar.isleap(datetime.now().year):
+        ldays[2]=29
+    ldays = ldays[1:]
+    lmonth= datetime.now().month-1
+    ldelta= ldays[lmonth-1]#+ldays[lmonth-2]
+
+    ### filter until only ###
+    limit_date = datetime.now()-timedelta(days=ldelta)
+    print 'limit_date: ', limit_date
     ### filterby ###
-    logbook         = LogBook.objects.all().order_by(order_in, 'controlNo').filter(~Q(status='TASK COMPLETED'))                 # verified correct and running smoothly
-    processing      = LogBook.objects.all().order_by('controlNo').filter(~Q(status='TASK COMPLETED'))                      # verified correct and running smoothly
-    assign_task     = logbook.filter(Q(current_user=request.user))                                                              # verified correct and running smoothly    
-    non_assign_task = logbook.filter(current_user__isnull=True)                                                                 # verified correct and running smoothly    
-    pending_task    = logbook.filter(Q(pend_at__gt=0))                                                                          # verified correct and running smoothly            
-    task_completed  = LogBook.objects.all().order_by(order_in, 'controlNo').filter(Q(status='TASK COMPLETED'))                  # verified correct and running smoothly  
+    logbook         = LogBook.objects.filter(~Q(status='TASK COMPLETED'),Q(dateEntry__gt=limit_date))                     # verified correct and running smoothly
+    processing      = LogBook.objects.filter(~Q(status='TASK COMPLETED'),Q(dateEntry__gt=limit_date)).order_by(order_in,'-id')     # verified correct and running smoothly
+    assign_task     = logbook.filter(~Q(status='TASK COMPLETED'),Q(current_user=request.user)).order_by(order_in,'controlNo')                                              # verified correct and running smoothly        
+    non_assign_task = logbook.filter(current_user__isnull=True).order_by(order_in,'-id')                                                                 # verified correct and running smoothly    
+    pending_task    = logbook.filter(Q(pend_at__gt=0)).order_by(order_in,'-id')                                                                         # verified correct and running smoothly            
+    task_completed  = LogBook.objects.filter(Q(status='TASK COMPLETED'),Q(dateEntry__gt=limit_date)).order_by(order_in, 'controlNo')                  # verified correct and running smoothly  
 
     ### check for query string and add to rb_filterby param
     if "page" in request.GET:
@@ -319,7 +329,7 @@ def logbook(request, rb_filterby=None):
         task_list = task_completed      
     else:
         if not task_list:    
-            task_list = assign_task         # verified correct and running smoothly
+            task_list = assign_task     # verified correct and running smoothly
     
     ### seperating  
     paginator   = Paginator(task_list, 5) # Show 5 log per page
@@ -488,7 +498,7 @@ def logbook(request, rb_filterby=None):
                             instance.status = 'REVIEW'
                             instance.current_user = currentuser
                             ## by checking no. of station between rsl and soa stn                            
-                            '''if log_stn_count == rsl_stn_count and log_unit_count == eq_unit_count:
+                            if log_stn_count == rsl_stn_count and log_unit_count == eq_unit_count:
                                 #proceed
                                 instance.status = 'REVIEW'
                                 instance.current_user = currentuser
@@ -496,7 +506,7 @@ def logbook(request, rb_filterby=None):
                                 msg = 'Please upload applicable RSL for CN: %s' % (instance.controlNo)
                                 messages.error(request, msg)
                                 print msg
-                            '''
+                            
                             ## also no. of equipment between equipment and soa ppp or license or channel
                         except ObjectDoesNotExist:
                             print "Either the LogBook_audit or User doesn't exist."
@@ -898,8 +908,12 @@ def equipdetails(request):
         if request.method == 'GET':
             #message = "This is an XHR GET request"
             combo1val   = request.GET.get('combo1val')
-            equipment = Equipment.objects.get(id=combo1val)    
-            serializer = EquipmentSerializer(equipment)           
+            try:
+                equipment = Equipment.objects.get(id=combo1val)    
+                serializer = EquipmentSerializer(equipment)           
+            except (ValueError, ObjectDoesNotExist):
+                print 'Equipment for %s does not exists' %(combo1val)
+
         elif request.method == 'POST':
             #message = "This is an XHR POST request"
             message = ""
@@ -965,7 +979,7 @@ def kpi_data(request):
 
         try:
             apt2 = apt.extra(select={'units':"""SELECT 
-                                          nvl(SUM( \
+                                          IFNULL(SUM( \
                                           CASE \
                                             WHEN appt.trans_type LIKE 'PPP' \
                                             THEN sappt.ppp_units \
@@ -985,7 +999,7 @@ def kpi_data(request):
                                             THEN sappt.ppp_units \
                                           END),0) "items" \
                                         FROM ccad_app_type appt, \
-                                          ( SELECT DISTINCT(sl.controlNo), \
+                                          ( SELECT DISTINCT sl.controlNo, \
                                             sappt_apptid, \
                                             sl.ppp_units, \
                                             sl.const_fee, \

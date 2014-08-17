@@ -54,7 +54,7 @@ def export_as_csv(modeladmin, request, queryset):
                     value = 'Error retrieving value'
             if value is None:
                 value = ''
-            print 'trace value:', value
+            #print 'trace value:', value
             values.append(unicode(value).encode('utf-8'))
         writer.writerow(values)
     return response

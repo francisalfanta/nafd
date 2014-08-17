@@ -1,4 +1,4 @@
-(function($){
+var $ = django.jQuery;
 $(document).ready(function() {
     if (! $('a[onclick="return showAddAnotherPopup(this);"]').length) {
 
@@ -100,4 +100,3 @@ $(document).ready(function() {
 
     }
 });
-})(grp.jQuery);

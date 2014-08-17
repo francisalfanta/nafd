@@ -1,4 +1,3 @@
-(function($){
 var RemoteAutocompleteWidget = {
     /*
     The default deck getValue() implementation just returns the PK from the
@@ -38,4 +37,3 @@ $(document).bind('yourlabsWidgetReady', function() {
         $(this).yourlabsWidget(RemoteAutocompleteWidget);
     });
 });
-})(grp.jQuery);

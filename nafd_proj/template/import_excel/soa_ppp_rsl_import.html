@@ -44,7 +44,7 @@ window.addEventListener('load', function () {
         }  else {
             var lh =  "localhost";
         }
-    var trim_id = url.replace("http://"+lh+"localhost/logs/soa_detail/import-ppp-rsl/",""), // url to be replace by url tag
+    var trim_id = url.replace("http://"+lh+"/logs/soa_detail/import-ppp-rsl/",""), // url to be replace by url tag
         pk_id   = trim_id.replace("/","");
     document.getElementById("id_model_id").value = parseInt(pk_id);
 });

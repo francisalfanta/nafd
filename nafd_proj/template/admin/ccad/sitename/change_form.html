@@ -1,0 +1,44 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_static admin_modify %}
+{% load url from future %}
+{% load admin_urls %}
+
+{% block javascripts %}
+    {{ block.super }}
+    <script>
+    var my_string = '';
+    function set_string( x ) { 
+        my_string = x;
+    }
+    </script>
+{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="{% static "admin/js/common.js" %}"></script>
+<script>
+   $(document).ready(function(){
+   {% if original.id %}
+    // for Testing
+    //$("fieldset.placeholder.statements_set-group").replaceWith($('#statements_set-group')); 
+   {%endif%}
+   });
+</script>
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+<!-- Submit-Row Find a way to add custom button FMA, doing so-->
+<footer class="grp-module grp-submit-row grp-fixed-footer">
+    <header style="display:none"><h1>Submit Options</h1></header>
+    <ul>
+        {% if 'ccad.engr_oview_sitename' in perms %}
+        <li><input type="submit" value="{% trans 'Save ' %}" class="grp-button grp-default" name="_save" {{ onclick_attrib }}/></li>
+        {% else %}        
+        <li><input type="submit" value="{% trans 'Save ' %}" class="grp-button grp-default" name="_save" {{ onclick_attrib }}/></li>
+        <!--<li><input type="submit" value="{% trans 'Save as new' %}" class="grp-button" name="_saveasnew" {{ onclick_attrib }}/></li>-->
+        <li><input type="submit" value="{% trans 'Save and add another' %}" class="grp-button" name="_addanother" {{ onclick_attrib }} /></li>
+        <li><input type="submit" value="{% trans 'Save and continue editing' %}" class="grp-button" name="_continue" {{ onclick_attrib }}/></li>        
+        {% endif %}              
+    </ul>
+</footer>
+{% endblock %}
+<!--END Submit -->

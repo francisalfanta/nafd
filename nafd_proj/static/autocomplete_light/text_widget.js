@@ -1,4 +1,4 @@
-(function($){
+var jQuery = django.jQuery;
 /*
 This script enables TextWidget, a widget for CharField that supports
 autocomplete for comma-separated values.
@@ -18,7 +18,7 @@ For now, the script is composed of these parts:
 - yourlabsTextWidget initialization system, which supports dynamically added
   autocompletes (ie. admin inlines)
 */
-var jQuery = django.jQuery;
+
 jQuery.fn.getSelectionStart = function(){
     // Written by jQuery4U
     // http://www.jquery4u.com/snippets/6-jquery-cursor-functions/#.UDPQ9xXtFw8
@@ -265,5 +265,3 @@ $(document).ready(function() {
         widget.trigger('initialize');
     });
 })
-})(grp.jQuery);
-

@@ -1,4 +1,4 @@
-(function($){
+var $ = django.jQuery;
 /*
 Here is the list of the major difference with other autocomplete scripts:
 
@@ -587,4 +587,3 @@ $(document).ready(function() {
         autocomplete.hide();
     });
 });
-})(grp.jQuery);

@@ -215,6 +215,23 @@ class RBUserListFilter(SimpleListFilter):
             return queryset.filter(current_user=self.value())
         if self.value() == 'All':            
             return queryset 
+
+class RBUserListFilter2(SimpleListFilter):
+    title = _('Created by')
+    parameter_name = 'current_user'
+    
+    def lookups(self, request, model_admin):
+        final_list = dict()
+        rbuser_list = NAFD_USER_GROUPS.objects.select_related().filter(group__name='Regulation Branch Personnel')
+        for x in rbuser_list:
+            final_list[x.nafd_user.id] = x.nafd_user.code_name
+        return final_list.items()
+    
+    def queryset(self, request, queryset):
+        if self.value() > 0:          
+            return queryset.filter(current_user=self.value())
+        if self.value() == 'All':            
+            return queryset 
 ### END ListFilter ###
 ### Inline ####
 #ok!
@@ -435,7 +452,7 @@ class CarrierAdmin(admin.ModelAdmin):
 #### Statement of Accounts ####
 #ok!
 class SOAAdmin(admin.ModelAdmin):
-    change_list_template = "admin/change_list_filter_sidebar.html"
+    #change_list_template = "admin/change_list_filter_sidebar.html"
     # to display horizontally --seems not working   
     list_display        = ['soa_code', 'date_issued', 'carrier', 'service_type', 'issued_by', 'approved_by', 'no_years', 
                            'validity_from', 'validity_to', 'official_receipt']
@@ -679,7 +696,7 @@ class Official_ReceiptAdmin(admin.ModelAdmin):
     #save_as             = True
 #OK!
 class LogBookAdmin(admin.ModelAdmin):
-    change_list_template = "admin/change_list_filter_sidebar.html"
+    #change_list_template = "admin/change_list_filter_sidebar.html"
     list_filter         = ['due_date', 'acceptancedate', 'carrier', 'status', 'transtype', 'service', RBUserListFilter, 'pending_desc']
     search_fields       = ['controlNo', 'permitNo', 'first_stn', 'last_stn', 'soa__soa_code']#,  'official_receipt__or_no']
     date_hierarchy      = 'acceptancedate'
@@ -802,7 +819,6 @@ class LogBookAdmin(admin.ModelAdmin):
     # to hide change and add buttons on main page:
     #def get_model_perms(self, request): 
     #    return {'view': True}
-#### end Logbook ####
 #OK!
 class SitenameAdmin(admin.ModelAdmin):
     list_display        = ['site', 'street', 'address', 'longitude', 'latitude', 'carrier']    
@@ -835,19 +851,44 @@ class AntennaAdmin(admin.ModelAdmin):
     search_fields       = ['antenna_type', 'directivity', 'height', 'gain']
     actions              = [export_as_csv]
 #### end Logbook ####
+#### Support Documents ####
+class SuggestionboxAdmin(admin.ModelAdmin):
+    form                = SuggestionboxForm
+    list_display        = ['title', 'remark', 'username']
+    list_filter         = [RBUserListFilter2]
+    search_fields       = ['title', 'remark', 'username']
+    fieldsets           = [(None, {'fields': ['title', 'remark']}),]  
+    actions             = [export_as_csv]
+
+    def save_model(self, request, obj, form, change):  
+        obj.username = request.user        
+        return super(SuggestionboxAdmin, self).save_model(request, obj, form, change)
+
+class DocFormatsAdmin(admin.ModelAdmin):
+    form                = DocFormatsForm
+    list_display        = ['title', 'docfile', 'username']
+    list_filter         = [RBUserListFilter2]
+    search_fields       = ['title', 'docfile', 'username']
+    fieldsets           = [(None, {'fields': ['title', 'docfile']}),]
+    actions             = [export_as_csv]
+
+    def save_model(self, request, obj, form, change):  
+        obj.username = request.user        
+        return super(DocFormatsAdmin, self).save_model(request, obj, form, change)
+#### End Documents ####
 #OK!
 class EquipmentAdmin(admin.ModelAdmin):
     #form                = autocomplete_light.modelform_factory(Equipment)#, form=EquipmentForm)
     form                = EquipmentForm
     search_fields       = ['tx_min', 'tx', 'tx_max', 'rx_min', 'rx', 'rx_max', 'power',
-                           'freqrange_low', 'freqrange_high', 'callsign', 'usage', 'serialno', 'polarity', 'p_purchase', 'p_possess', 'p_storage', 'makemodel__make',
+                           'freqrange_low', 'freqrange_high', 'callsign', 'usages', 'serialno', 'polarity', 'p_purchase', 'p_possess', 'p_storage', 'makemodel__make',
                            'antenna__antenna_type','sitename__street', 'sitename__address__city', 'sitename__address__province']
     list_display        = ['makemodel', 'serialno', 'callsign', 'equip_txrx', 'equip_powerbwe', 
                            'equip_freqrange', 'equip_usagepolarity', 'p_purchase', 'p_possess', 'p_storage', 'carrier', 'antenna']
     list_filter         = ['carrier', 'makemodel', 'bwe']
     fieldsets = [
         (None,              {'fields': [('callsign', 'status'),]}),
-        ('Make/Type/Model', {'fields': ['makemodel', 'serialno',('power', 'unit'),'bwe','usage']}),
+        ('Make/Type/Model', {'fields': ['makemodel', 'serialno',('power', 'unit'),'bwe','usages']}),
         ('Frequency Range',       {'classes' : ('grp-collapse grp-open',),
                                     'fields': [('freqrange_low','freqrange_high'), ('freqrange_low2','freqrange_high2')]}),
         ('Transmit / Received',    {'classes' : ('grp-collapse grp-open',),
@@ -873,7 +914,7 @@ class EquipmentAdmin(admin.ModelAdmin):
             return res     
 #OK!            
 class LatestRsl_v2Admin(admin.ModelAdmin):
-    change_list_template = "admin/change_list_filter_sidebar.html"
+    #change_list_template = "admin/change_list_filter_sidebar.html"
     __metaclass__ = classmaker(right_metas=(ModelAdminWithForeignKeyLinksMetaclass,))
     inlines             = (EquipmentInline, Official_ReceiptInline)  
     form                = LatestRsl_v2Form
@@ -963,6 +1004,9 @@ admin.site.register(EquipModel, EquipModelAdmin)
 admin.site.register(Antenna, AntennaAdmin)
 admin.site.register(Equipment, EquipmentAdmin)
 admin.site.register(LatestRsl_v2, LatestRsl_v2Admin)
+
+admin.site.register(Suggestion_box, SuggestionboxAdmin)
+admin.site.register(DocFormats, DocFormatsAdmin)
 # Re-register UserAdmin
 ''' Depreciated in Django 1.5
 admin.site.unregister(User)
