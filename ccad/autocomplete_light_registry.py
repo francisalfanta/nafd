@@ -113,7 +113,7 @@ class EquipModelAutocomplete(autocomplete_light.AutocompleteModelBase):
 autocomplete_light.register(EquipModel, EquipModelAutocomplete)
 
 class AntennaAutocomplete(autocomplete_light.AutocompleteModelBase):
-	search_fields = ['antenna_type']
+	search_fields = ['id', 'antenna_type']
 	autocomplete_js_attributes = { 'placeholder': 'Antenna type', }
 	widget_js_attributes = { 'min_values': 0, }
 	'''

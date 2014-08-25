@@ -847,8 +847,8 @@ class EquipModelAdmin(admin.ModelAdmin):
 #OK!
 class AntennaAdmin(admin.ModelAdmin):
     form                = autocomplete_light.modelform_factory(Antenna)
-    list_display        = ['antenna_type','directivity', 'height', 'gain' ]  
-    search_fields       = ['antenna_type', 'directivity', 'height', 'gain']
+    list_display        = ['id', 'antenna_type','directivity', 'height', 'gain' ]  
+    search_fields       = ['id', 'antenna_type', 'directivity', 'height', 'gain']
     actions              = [export_as_csv]
 #### end Logbook ####
 #### Support Documents ####

@@ -63,7 +63,7 @@ class myAjaxFileUploader(AjaxFileUploader):
                     instance = LogBook.objects.get(id=pk)                    
                     file_content = ContentFile(upload.read())                    
                     instance.endorsementfile.save(filename, file_content)         
-                    print 'instance.endorsementfile', instance.endorsementfile          
+                    #print 'instance.endorsementfile', instance.endorsementfile          
                     instance.save()                    
                     # next problem double file save --> solved by placing different folder
                     # next is subclassing this part --> solved by placing return super at the end while removing all return line
@@ -94,22 +94,22 @@ class myAjaxFileUploader(AjaxFileUploader):
                         or filename)
             # save the file
             backend.setup(filename, *args, **kwargs)
-            print 'setup complete!'
+            #print 'setup complete!'
             success = backend.upload(upload, filename, is_raw, *args, **kwargs)
-            print 'success: ', success     
-            print 'filename: ' + filename
+            #print 'success: ', success     
+            #print 'filename: ' + filename
             # callback
             extra_context = backend.upload_complete(upload, filename, *args, **kwargs)
-            print 'extra context complete! ', extra_context           
+            #print 'extra context complete! ', extra_context           
             # let Ajax Upload know whether we saved it or not
             ret_json = {'success': success, 'filename': filename}
-            print 'ret_json', ret_json
+            #print 'ret_json', ret_json
             if extra_context is not None:
                 ret_json.update(extra_context)
             
             return HttpResponse(json.dumps(ret_json, cls=DjangoJSONEncoder), content_type='application/json; charset=utf-8')
         else:
-            print 'Error: Only Post allowed'
+            #print 'Error: Only Post allowed'
             response = HttpResponseNotAllowed(['POST'])
             response.write("ERROR: Only POST allowed")
             return response
@@ -260,6 +260,7 @@ def logbook(request, rb_filterby=None):
     site_url = 'admin/logbook.html'   
     task_list = None
     sec_task = ['PAYMENT', 'ENDORSEMENT', 'DIRECTOR SIGNATURE', 'CASHIER STAMP', 'RELEASE TO SECRETARIAT']
+    rb_sec_task = ['CHIEF SIGNATURE', 'DIRECTOR SIGNATURE']
 
     encoder_list = NAFD_User.objects.filter(groups__name='Encoder', is_active=1).filter(groups__name='NAFD Personnel')    ## for engr action choosing an encoder
     engr_list = NAFD_User.objects.filter(groups__name='Engr',is_active=1)           ## for chief action choosing an engr
@@ -270,7 +271,7 @@ def logbook(request, rb_filterby=None):
     except NAFD_User.MultipleObjectsReturned:
         chief_list = NAFD_User.objects.filter(Q(groups__name='NAFD Chief', is_active=1)).order_by('date_joined')
         for record in chief_list[1:]:           
-            print 'update the other chief found to set inactive :', record.id
+            #print 'update the other chief found to set inactive :', record.id
             record.is_active = False
             record.save()        
         chief = NAFD_User.objects.get(Q(groups__name='NAFD Chief', is_active=1))   ## check who's NFD Chief
@@ -284,7 +285,10 @@ def logbook(request, rb_filterby=None):
     elif request.user.groups.filter(name='Encoder').exists():                
         #print 'order in encoder'
         order_in = 'encoder_status'    
-        task_list = LogBook.objects.order_by(order_in, 'controlNo').filter(Q(current_user=request.user) | Q(status='REVIEW'))           
+        task_list = LogBook.objects.order_by(order_in, 'controlNo').filter(Q(current_user=request.user) | Q(status='REVIEW'))
+    elif request.user.groups.filter(name='RB Secretary').exists():
+        task_list = LogBook.objects.order_by('controlNo').filter(status__in=rb_sec_task)
+        order_in = 'chief_status'
     else:
         #print 'order in controlno'
         order_in = 'controlNo'
@@ -300,14 +304,14 @@ def logbook(request, rb_filterby=None):
 
     ### filter until only ###
     limit_date = datetime.now()-timedelta(days=ldelta)
-    print 'limit_date: ', limit_date
+    #print 'limit_date: ', limit_date
     ### filterby ###
     logbook         = LogBook.objects.filter(~Q(status='TASK COMPLETED'),Q(dateEntry__gt=limit_date))                     # verified correct and running smoothly
     processing      = LogBook.objects.filter(~Q(status='TASK COMPLETED'),Q(dateEntry__gt=limit_date)).order_by(order_in,'-id')     # verified correct and running smoothly
-    assign_task     = logbook.filter(~Q(status='TASK COMPLETED'),Q(current_user=request.user)).order_by(order_in,'controlNo')                                              # verified correct and running smoothly        
+    assign_task     = logbook.filter(~Q(status='TASK COMPLETED'),Q(current_user=request.user),Q(dateEntry__gt=limit_date)).order_by(order_in,'controlNo')                                              # verified correct and running smoothly        
     non_assign_task = logbook.filter(current_user__isnull=True).order_by(order_in,'-id')                                                                 # verified correct and running smoothly    
     pending_task    = logbook.filter(Q(pend_at__gt=0)).order_by(order_in,'-id')                                                                         # verified correct and running smoothly            
-    task_completed  = LogBook.objects.filter(Q(status='TASK COMPLETED'),Q(dateEntry__gt=limit_date)).order_by(order_in, 'controlNo')                  # verified correct and running smoothly  
+    task_completed  = LogBook.objects.filter(Q(status='TASK COMPLETED'),Q(dateEntry__gt=limit_date)).order_by(order_in, '-controlNo')                  # verified correct and running smoothly  
 
     ### check for query string and add to rb_filterby param
     if "page" in request.GET:
@@ -371,7 +375,7 @@ def logbook(request, rb_filterby=None):
         #print 'Entered POST: ', formset.errors 
         if formset.is_valid(): # All validation rules pass 
             formset.save(commit=False)
-            print 'Entered formset.is_valid'
+            #print 'Entered formset.is_valid'
             for form in formset.forms:
                 pend_desc   = form.cleaned_data['pending_desc']  
                 status      = form.cleaned_data['status']
@@ -384,7 +388,7 @@ def logbook(request, rb_filterby=None):
                 if ischecked == True: 
                     #print 'ischecked True'
                     if request.user.groups.filter(name='Engr').exists(): #### Engr
-                        print 'Entered Engr'
+                        #print 'Entered Engr'
                         if status == 'CHECKING REQUIREMENTS':
                             # instance.current_user = '' #?? no fields yet logbook will be in charge of placing the user                      
                             if engrchoice == 'PENDING':
@@ -440,7 +444,7 @@ def logbook(request, rb_filterby=None):
                             instance.current_user = chief           # to be forwarded to RB Secretary                   
                     
                     elif request.user.groups.filter(name='RB Secretary').exists(): ### Director Secretary
-                        print 'Entered RB Secretary'
+                        #print 'Entered RB Secretary'
                         if status == 'CHIEF SIGNATURE':
                             print 'RB Secretary'
                             instance.status = 'DIRECTOR SIGNATURE'
@@ -453,7 +457,7 @@ def logbook(request, rb_filterby=None):
                             instance.current_user = request.user
 
                     elif request.user.groups.filter(name='NAFD Secretary').exists(): ### NAFD Secretary
-                        print 'Entered Elif NAFD Secretary'
+                        #print 'Entered Elif NAFD Secretary'
                         engr_user   = form.cleaned_data['current_user']  
                         if status == 'PAYMENT':  
                             print 'Entered Payment'
@@ -488,7 +492,7 @@ def logbook(request, rb_filterby=None):
                             rsl_list = LatestRsl_v2.objects.filter(logbook=instance.id)
                             ## self.noofstation vs rsl stns
                             rsl_stn_count = LatestRsl_v2.objects.filter(logbook=instance.id).count()
-                            #print 'soa_list', rsl_stn_count
+                            #print 'rsl_stn_count', rsl_stn_count
                             ## self.units vs equipments units                            
                             ## test
                             #eq_unit_count = Equipment.objects.filter(logbook=instance.id).count() # original
@@ -497,19 +501,44 @@ def logbook(request, rb_filterby=None):
                             #print 'eq_unit_count: ', eq_unit_count
                             instance.status = 'REVIEW'
                             instance.current_user = currentuser
-                            ## by checking no. of station between rsl and soa stn                            
-                            if log_stn_count == rsl_stn_count and log_unit_count == eq_unit_count:
-                                #proceed
+                            ## check for logbook app type if PPP
+                            if instance.transtype == 'PPP' or instance.transtype == 'STO' or instance.transtype == 'RECALL':
+                                 ## by checking no. of station between rsl and soa stn                            
+                                if log_unit_count == eq_unit_count:
+                                    #proceed
+                                    instance.status = 'REVIEW'
+                                    instance.current_user = currentuser
+                                else:
+                                    msg = 'Please upload applicable No. of Equipment or No. of RSL for CN: %s' % (instance.controlNo)
+                                    messages.error(request, msg)
+                                    print msg
+                            elif instance.transtype == 'NEW' or instance.transtype == 'DUP':
+                                ## by checking no. of station between rsl and soa stn                            
+                                if log_stn_count == rsl_stn_count:
+                                    #proceed
+                                    instance.status = 'REVIEW'
+                                    instance.current_user = currentuser
+                                else:
+                                    msg = 'Please upload applicable No. of Equipment or No. of RSL for CN: %s' % (instance.controlNo)
+                                    messages.error(request, msg)
+                                    print msg
+                            elif instance.transtype == 'DEMO' or instance.transtype == 'TP':
                                 instance.status = 'REVIEW'
                                 instance.current_user = currentuser
                             else:
-                                msg = 'Please upload applicable RSL for CN: %s' % (instance.controlNo)
-                                messages.error(request, msg)
-                                print msg
+                                ## by checking no. of station between rsl and soa stn                            
+                                if log_stn_count == rsl_stn_count and log_unit_count == eq_unit_count:
+                                    #proceed
+                                    instance.status = 'REVIEW'
+                                    instance.current_user = currentuser
+                                else:
+                                    msg = 'Please upload applicable No. of Equipment or No. of RSL for CN: %s' % (instance.controlNo)
+                                    messages.error(request, msg)
+                                    print msg
                             
                             ## also no. of equipment between equipment and soa ppp or license or channel
                         except ObjectDoesNotExist:
-                            print "Either the LogBook_audit or User doesn't exist."
+                            #print "Either the LogBook_audit or User doesn't exist."
                             currentuser = None
                         #instance.current_user = currentuser                                                                           # verified correct and running smoothly                                                       
                     instance.save()
@@ -525,7 +554,7 @@ def logbook(request, rb_filterby=None):
                                 #print 'Is not Ontime'
                                 log_audit.is_ontime = False
                         log_audit.save()                    
-                    print 'Done instance save'                    
+                    #print 'Done instance save'                    
             return HttpResponseRedirect(reverse('ccad.views.logbook', args=[url_args])) # Redirect after POST
         #print 'After POST'
     else:
@@ -540,7 +569,7 @@ def logbook(request, rb_filterby=None):
     return render_to_response(site_url, ctx, context_instance=RequestContext(request))
 #OK!
 def for_correction(request, pk):        # same with undolink_engr
-    print 'inside for_correction'
+    #print 'inside for_correction'
     # only the assign engr for such logbook can undo command
     undo_rec  = LogBook.objects.get(pk=pk)  
     rb_filterby = 'new' 
@@ -703,6 +732,8 @@ def app_detail(request, detail, pk):    # for showing 'More Details'
                 eq_filter_list = equiprack_list
                 #print 'Default eq_filter_list: ', eq_filter_list
                 pass
+        else:
+            eq_filter_list = equiprack_list.none()
         for e in eq_filter_list:
             eq_id.append(e.equipment.id)
             #print 'eq_id: ', eq_id        
@@ -736,7 +767,7 @@ def app_detail(request, detail, pk):    # for showing 'More Details'
                             pass
             except ObjectDoesNotExist:
                 rsl_queryset = LatestRsl_v2_Equipment.objects.none()
-                print 'No rsl_queryset'
+                #print 'No rsl_queryset'
                 rslid = ''
                 sitename = ''
             
@@ -758,10 +789,11 @@ def app_detail(request, detail, pk):    # for showing 'More Details'
         i = 0 # counter for equip set per rsl
        
         for rsl in rsl_list:
-            #print 'rsl id: ', rsl.id 
+            print 'rsl id: ', rsl.id 
             equip_set = LatestRsl_v2_Equipment.objects.select_related().filter(latestrsl_v2=rsl)
             #print 'rsl_equip ', equip_set
             sn_i = 0 # counter for equip serial per equip            
+            
             for eq in equip_set: 
                 ### add serial to equip_sn_dict  
                 ### need to add equipment ID              
@@ -787,16 +819,22 @@ def app_detail(request, detail, pk):    # for showing 'More Details'
                 else:
                     txrx = ''
 
-                equip_txrx_list.append(txrx)                
-                equip_dict={'antenna_id': eq.equipment.antenna.id, 'make':eq.equipment.makemodel.make, 
-                            'antenna':eq.equipment.antenna.antenna_type,
-                            # eq.equipment.id will be use to check if equipment exist only
-                            'eq_id':eq.equipment.id}             
+                equip_txrx_list.append(txrx)
+                if eq.equipment.antenna:
+                    equip_dict={'antenna_id': eq.equipment.antenna.id, 'make':eq.equipment.makemodel.make, 
+                                'antenna':eq.equipment.antenna.antenna_type,
+                                # eq.equipment.id will be use to check if equipment exist only
+                                'eq_id':eq.equipment.id}  
+                    print 'eq_id: ', eq.equipment.id         
                 sn_i = sn_i + 1                              
+            
+
             equip_id_sn_zip = zip(equip_sn_list, equip_id_list)           
             equip_dict['callsign'] = equip_callsign_list
             equip_dict['serialno'] = equip_id_sn_zip
+            #print 'equip_dict[serialno]', equip_dict['serialno']
             equip_dict['txrx']     = equip_txrx_list
+            #print 'equip_dict[txrx]', equip_dict['txrx']
 
             eqinfo_list.insert(i,equip_dict)
             #print 'BEFORE: equinfo_list', eqinfo_list
@@ -809,7 +847,7 @@ def app_detail(request, detail, pk):    # for showing 'More Details'
             i = i + 1                   
         #print 'eqinfo list: ', eqinfo_list      
         site_url = 'detail_page_cprsl.html'
-        #print 'eqinfor_list: ', eqinfo_list
+        #print 'after eqinfor_list: ', eqinfo_list
         #else 
             ## write error handling here 
         #print 'rsl_list: ', rsl_list
@@ -958,6 +996,7 @@ def kpi_data(request):
     message = ''    
     prev_type = ''    
     prev_count = 0
+    items = 0
 
     include_only = ['PPP', 'CP', 'RSL', 'MOD', 'RECALL', 'TP', 'DEMO', 'DUP']  
     export_data = {} 
@@ -1063,17 +1102,45 @@ def kpi_data(request):
                 ontime_count = 0          # resetting variables                         
                 current_type = i
                 for sappt in sappt_list:
-                    logbook_list = sappt.soa.logbook_set.all()
-                    for logbook in logbook_list:
-                        logbook_audit_list = logbook.logbook_audit_set.filter(username__id=show_user)
-                        ontime_count = logbook_audit_list.filter(is_ontime=1).count() 
-                
-                        if current_type == prev_type:
-                            export_data[i+'_ontime']=ontime_count + prev_count
-                        else:
-                            export_data[i+'_ontime']=ontime_count
-                        prev_type = i
-                        prev_count = ontime_count                                    
+                    stm_list = sappt.soa.statements_set.all()
+                    for stm in stm_list:
+                        # check if the user process the application
+                        check_user = stm.logbook.logbook_audit_set.filter(username_id=show_user)
+                        if check_user:
+                            #print 'User process the application with user id: ', show_user
+                            ontime = stm.logbook.logbook_audit_set.filter(status='TASK COMPLETED',is_ontime=1).count()                         
+                            
+                            if i == 'PPP':
+                                items = sappt.soa.ppp_units            
+                            elif i == 'CP':
+                                # applicable to basic fees not included VSAT or repeater Const Fee
+                                items = sappt.soa.const_fee/360            
+                            elif i == 'RSL':            
+                                items = sappt.soa.rsl_units            
+                            elif i == 'MOD':        
+                                items = sappt.soa.mod_units            
+                            elif i == 'RECALL':
+                                items = sappt.soa.stor_units            
+                            elif i == 'TP':
+                                items = sappt.soa.rsl_units  
+                            elif i == 'DUP':
+                                items = sappt.soa.duplicate_fee/120
+                            elif i == 'DEMO':
+                                items = sappt.soa.ppp_units              
+
+                            if ontime:
+                                # initialize if prev_type is not empty
+                                if current_type == prev_type:
+                                    export_data[i+'_ontime']=items+prev_count
+                                    #print 'export_data[%s_ontime] : %s where prov_count is: %s' %(i,items+prev_count, prev_count)
+                                # if prev_type is empty:
+                                else:
+                                    export_data[i+'_ontime']=items
+                                    #print 'export_data[%s_ontime] : %s' %(i, items)
+                                prev_type = i
+                                prev_count = items         
+                            # reset
+                            items = 0                           
 
         except  (ValueError, ObjectDoesNotExist):
             print 'Error in evaluating apt2.'        
@@ -1083,9 +1150,12 @@ def kpi_data(request):
                 export_data[rec.trans_type]=rec.units            
         # computing for include trans_type items completed beyond due date
         for i in include_only:
+            #print 'export_data[%s]' %(export_data[i])
+            #print 'export_data[on_time]: ', export_data[i+'_ontime']
             if export_data[i] ==None:
                 export_data[i] = 0 
-            export_data[i+'_due']= export_data[i] - export_data[i+'_ontime']          
+            export_data[i+'_due']= export_data[i] - export_data[i+'_ontime'] 
+            #print 'export_data[%s]' %(i+'_due')         
     
     else:
         message = "No XHR"

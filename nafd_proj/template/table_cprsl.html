@@ -27,9 +27,9 @@
             {{cs}}
          {% endfor %}
       </td>
-      <td class="eq-serial"> 
-         {% for sn, eq_id in eq.serialno %}                                  
-            <a href="{% url 'admin:ccad_equipment_change' eq_id %}?next={% url 'info_detail' detail='cprsl' pk=instance.id %}">{{sn}}</a> <br>      
+      <td class="eq-serial">          
+         {% for sn, eq_id in eq.serialno %}                                           
+            <a href="{% url 'admin:ccad_equipment_change' eq_id %}?next={% url 'info_detail' detail='cprsl' pk=instance.id %}">{{sn}}</a> <br>               
          {% endfor %}
       </td>       
       <td class="antenna-info"><a href="{% url 'admin:ccad_antenna_change' eq.antenna_id %}?next={% url 'info_detail' detail='cprsl' pk=instance.id %}">{{eq.antenna}}</a></td>

@@ -383,6 +383,7 @@ class SOA(models.Model):
         #db_table            = u'ccad_SOA'
         verbose_name_plural = "Statement of Accounts"
         verbose_name        = "Statement of Account"
+        ordering            = ['-id']
 
     def __unicode__(self):
         return u'%s' % self.soa_code
@@ -419,9 +420,9 @@ class SOA_detail(models.Model):
     id              = models.AutoField(primary_key=True)
     soa             = models.ForeignKey(SOA, related_name='Statement of Account', verbose_name='Statement of Account')
     site_no         = models.CharField(max_length=20, blank=True, null=True, verbose_name='Site No')                                            ######## added
-    sitename        = models.CharField(max_length=100, verbose_name='Site Name')
-    city            = models.CharField(max_length=50, blank=True, null=True, verbose_name='City')                                               ######## added 
+    sitename        = models.CharField(max_length=100, verbose_name='Site Name')    
     site_addr       = models.CharField(null=True, blank=True, max_length=500, verbose_name='Site Address')
+    city            = models.CharField(max_length=50, blank=True, null=True, verbose_name='City')                                               ######## added 
     band            = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='Band')               ######## added    
     call_sign       = models.CharField(null=True, blank=True, max_length=100, verbose_name='Call-Sign')   
     no_years        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Years')    
@@ -1149,30 +1150,30 @@ class MasterRsl(models.Model):
     spare_equip_serial2 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip2")
     spare_equip_serial3 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip3")
     spare_equip_serial4 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip4")
-    sn1             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#1")
-    sn2             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#2")
-    sn3             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#3")
-    sn4             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#4")
-    sn5             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#5")
-    sn6             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#6")
-    sn7             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#7")
-    sn8             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#8")
-    sn9             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#9")
-    sn10            = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#10")
-    sn11            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#11")
-    sn12            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#12")
-    sn13            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#13")
-    sn14            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#14")
-    sn15            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#15")
-    sn16            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#16")
-    sn17            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#17")
-    sn18            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#18")
-    sn19            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#19")
-    sn20            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#20")
-    sn21            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#21")
-    sn22            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#22")
-    sn23            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#23")
-    sn24            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#24")
+    sn1             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#1")
+    sn2             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#2")
+    sn3             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#3")
+    sn4             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#4")
+    sn5             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#5")
+    sn6             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#6")
+    sn7             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#7")
+    sn8             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#8")
+    sn9             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#9")
+    sn10            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#10")
+    sn11            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#11")
+    sn12            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#12")
+    sn13            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#13")
+    sn14            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#14")
+    sn15            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#15")
+    sn16            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#16")
+    sn17            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#17")
+    sn18            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#18")
+    sn19            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#19")
+    sn20            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#20")
+    sn21            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#21")
+    sn22            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#22")
+    sn23            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#23")
+    sn24            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#24")
     freqrange       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Freq Range")
     validity_from   = models.DateField(null=True, verbose_name="Valid from", blank=True)
     validity_to     = models.DateField(null=True, verbose_name="Valid until", blank=True)
@@ -1545,33 +1546,34 @@ class MasterRsl(models.Model):
     old_serial_no_sp2 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 2")
     old_serial_no_sp3 = models.CharField(max_length=100, blank=True, null=True, verbose_name="Old Spare Serial No 3") 
 
-    old_make_1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model1")
-    old_make_2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model2")
-    old_make_3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model3")
-    old_make_4    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model4")
-    old_make_5    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model5")
-    old_make_6    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model6")
-    old_make_7    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model7")
-    old_make_8    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model8")
-    old_make_9    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model9")
-    old_make_10   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model10")
-    old_make_11   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model11")
-    old_make_12   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model12")
-    old_make_13    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model13")
-    old_make_14    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model14")
-    old_make_15    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model15")
-    old_make_16    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model16")
-    old_make_17    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model17")
-    old_make_18    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model18")
-    old_make_19    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model19")
-    old_make_20    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model20")
-    old_make_21    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model21")
-    old_make_22    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model22")
-    old_make_23    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model23")
-    old_make_24    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model24")
-    old_make_SP1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp1")
-    old_make_SP2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp2")
-    old_make_SP3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp3")
+    
+    old_make_1    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model1")
+    old_make_2    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model2")
+    old_make_3    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model3")
+    old_make_4    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model4")
+    old_make_5    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model5")
+    old_make_6    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model6")
+    old_make_7    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model7")
+    old_make_8    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model8")
+    old_make_9    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model9")
+    old_make_10   = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model10")
+    old_make_11   = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model11")
+    old_make_12   = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model12")
+    old_make_13    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model13")
+    old_make_14    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model14")
+    old_make_15    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model15")
+    old_make_16    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model16")
+    old_make_17    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model17")
+    old_make_18    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model18")
+    old_make_19    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model19")
+    old_make_20    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model20")
+    old_make_21    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model21")
+    old_make_22    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model22")
+    old_make_23    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model23")
+    old_make_24    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model24")
+    old_make_SP1    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Modelsp1")
+    old_make_SP2    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Modelsp2")
+    old_make_SP3    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Modelsp3")
 
     capacity      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Capacity")
 
@@ -1627,9 +1629,12 @@ class MasterRsl(models.Model):
     storage_all     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage All")
     purchase_all    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase All")
     possess_all     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess All")
+    old_make_all    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model All")
     
     philaddress   = models.ForeignKey(PhilAddress,  blank=True, null=True, on_delete=models.SET_NULL)
     carrierFK     = models.ForeignKey(Carrier, verbose_name='Carrier',  blank=True, null=True, on_delete=models.SET_NULL) 
+
+
 
     class Meta:
         db_table            = u'master_rsl'
@@ -1763,30 +1768,30 @@ class LatestRsl(models.Model):
     spare_equip_serial2 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip2")
     spare_equip_serial3 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip3")
     spare_equip_serial4 = models.CharField(max_length=150, blank=True, null=True, verbose_name="Spare Equip4")
-    sn1             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#1")
-    sn2             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#2")
-    sn3             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#3")
-    sn4             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#4")
-    sn5             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#5")
-    sn6             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#6")
-    sn7             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#7")
-    sn8             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#8")
-    sn9             = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#9")
-    sn10            = models.CharField(max_length=100, blank=True, null=True, verbose_name="Serial No#10")
-    sn11            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#11")
-    sn12            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#12")
-    sn13            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#13")
-    sn14            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#14")
-    sn15            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#15")
-    sn16            = models.CharField(max_length=17, blank=True, null=True, verbose_name="Serial No#16")
-    sn17            = models.CharField(max_length=17, blank=True, null=True, verbose_name="Serial No#17")
-    sn18            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#18")
-    sn19            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#19")
-    sn20            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#20")
-    sn21            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#21")
-    sn22            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#22")
-    sn23            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#23")
-    sn24            = models.CharField(max_length=50, blank=True, null=True, verbose_name="Serial No#24")
+    sn1             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#1")
+    sn2             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#2")
+    sn3             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#3")
+    sn4             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#4")
+    sn5             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#5")
+    sn6             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#6")
+    sn7             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#7")
+    sn8             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#8")
+    sn9             = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#9")
+    sn10            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#10")
+    sn11            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#11")
+    sn12            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#12")
+    sn13            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#13")
+    sn14            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#14")
+    sn15            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#15")
+    sn16            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#16")
+    sn17            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#17")
+    sn18            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#18")
+    sn19            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#19")
+    sn20            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#20")
+    sn21            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#21")
+    sn22            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#22")
+    sn23            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#23")
+    sn24            = models.CharField(max_length=60, blank=True, null=True, verbose_name="Serial No#24")
     freqrange       = models.CharField(max_length=100, blank=True, null=True, verbose_name="Freq Range")
     validity_from   = models.DateField(null=True, verbose_name="Valid from", blank=True)
     validity_to     = models.DateField(null=True, verbose_name="Valid until", blank=True)
@@ -2211,33 +2216,33 @@ class LatestRsl(models.Model):
     
     capacity      = models.CharField(max_length=100, blank=True, null=True, verbose_name="Capacity")
 
-    old_make_1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model1")
-    old_make_2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model2")
-    old_make_3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model3")
-    old_make_4    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model4")
-    old_make_5    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model5")
-    old_make_6    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model6")
-    old_make_7    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model7")
-    old_make_8    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model8")
-    old_make_9    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model9")
-    old_make_10   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model10")
-    old_make_11   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model11")
-    old_make_12   = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model12")
-    old_make_13    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model13")
-    old_make_14    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model14")
-    old_make_15    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model15")
-    old_make_16    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model16")
-    old_make_17    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model17")
-    old_make_18    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model18")
-    old_make_19     = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model19")
-    old_make_20     = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model20")
-    old_make_21     = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model21")
-    old_make_22     = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model22")
-    old_make_23     = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model23")
-    old_make_24     = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model24")
-    old_make_SP1    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp1")
-    old_make_SP2    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp2")
-    old_make_SP3    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Modelsp3") 
+    old_make_1    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model1")
+    old_make_2    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model2")
+    old_make_3    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model3")
+    old_make_4    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model4")
+    old_make_5    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model5")
+    old_make_6    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model6")
+    old_make_7    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model7")
+    old_make_8    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model8")
+    old_make_9    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model9")
+    old_make_10   = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model10")
+    old_make_11   = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model11")
+    old_make_12   = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model12")
+    old_make_13    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model13")
+    old_make_14    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model14")
+    old_make_15    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model15")
+    old_make_16    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model16")
+    old_make_17    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model17")
+    old_make_18    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model18")
+    old_make_19    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model19")
+    old_make_20    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model20")
+    old_make_21    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model21")
+    old_make_22    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model22")
+    old_make_23    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model23")
+    old_make_24    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Model24")
+    old_make_SP1    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Modelsp1")
+    old_make_SP2    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Modelsp2")
+    old_make_SP3    = models.CharField(max_length=60, blank=True, null=True, verbose_name="Old Make/Modelsp3")
     old_sitename    = models.CharField(max_length=300, blank=True, null=True, verbose_name="Old Site")
    
     philaddress     = models.ForeignKey(PhilAddress,  blank=True, null=True, on_delete=models.SET_NULL)
@@ -2247,6 +2252,7 @@ class LatestRsl(models.Model):
     storage_all     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Storage All")
     purchase_all    = models.CharField(max_length=100, blank=True, null=True, verbose_name="Purchase All")
     possess_all     = models.CharField(max_length=100, blank=True, null=True, verbose_name="Possess All")
+    old_make_all    = models.CharField(max_length=150, blank=True, null=True, verbose_name="Old Make/Model All")
 
     class Meta:
         db_table            = u'latest_rsl'
@@ -2464,7 +2470,7 @@ def compute_suf(sender, instance, **kwargs):
 def staff_KPI(sender, instance, **kwargs):     
     staff_count = 0
     staff_target= 0
-    staff_list   = NAFD_User.objects.filter(Q(groups__name='Encoder')|Q(groups__name='Engr'), ~Q(groups__name='NFD Chief'))    
+    staff_list   = NAFD_User.objects.filter(groups__name='NAFD Personnel').filter(Q(groups__name='Encoder')|Q(groups__name='Engr')) 
     staff_count  = staff_list.count()
     #print 'Staff count: ', staff_count
     ## find current kpi target
@@ -2507,3 +2513,22 @@ def LRsl_controlNo(sender, instance, **kwargs):
     if instance.sitename.address:
         print 'province: ', instance.sitename.address.province     
         sitename_province =instance.sitename.address.province  
+
+@receiver (post_save, sender=LogBook_audit)
+def LogBook_audit_duedate(sender, instance, **kwargs): 
+    # update is_ontime column  
+    # if task completed status <= to due date
+    # it's ontime else otherwise
+    print 'instance.status :', instance.status    
+    if instance.status == 'TASK COMPLETED':
+        # find due date    
+        logbook = LogBook.objects.get(pk=instance.logbook_id)
+        print 'logbook.due_date: ', logbook.due_date
+        if instance.log_in <= logbook.due_date:
+            print 'The task completed on time'
+            instance.is_ontime = True
+        else:
+            print 'The task completed NOT on time'
+            instance.is_ontime = False
+    
+

@@ -226,6 +226,15 @@ class SOA_detail_demodup_ImportForm(ImportExcelForm):
         dup = 0
         fil = 0     
         end_row = 0
+        header_name = []
+        # get the field name available  
+        for x in range(sheet.nrows)[8:9]:            
+            for cx in range(sheet.ncols):                
+                field_names = sheet.cell(x,cx).value
+                #print 'field_names: ', field_names            
+                header_name.append(field_names)
+                #print 'header_name[%s] : %s' %(cx,header_name[cx])
+               
         for rx in range(sheet.nrows):
             row = sheet.row(rx)            
             if not row:                
@@ -236,7 +245,8 @@ class SOA_detail_demodup_ImportForm(ImportExcelForm):
             for cx in range(sheet.ncols): 
                 ## look for cell under row number and col number            
                 cell = sheet.cell(rx, cx)                                           
-              
+                #print 'sheet.cell(%s,%s): %s' %(rx,sheet.cell(rx,3).value,cx)
+
                 if cell.ctype == xlrd.XL_CELL_DATE:                                                    
                     # Return a tuple
                     dt_tuple = xlrd.xldate_as_tuple(cell.value, book.datemode)                    
@@ -245,16 +255,19 @@ class SOA_detail_demodup_ImportForm(ImportExcelForm):
                 elif cell.ctype == xlrd.XL_CELL_NUMBER:
                     get_col = float(cell.value)                          
                     ## find end row by using total Lic                               
-                    if cx == 4:
-                        demo = demo + get_col                        
-                    if cx == 6:
+                    if header_name[cx] == 'demo_fee':
+                        demo = demo + get_col
+                        #print 'demo_fee[r:%s, c: %s]: %s' %(rx,cx,demo)                        
+                    if header_name[cx] == 'purchase_fee':
                         pur = pur + get_col                        
-                    if cx == 8:
+                    if header_name[cx] == 'duplicate_fee':
                         dup = dup + get_col                                            
-                    if cx == 10:
+                    if header_name[cx] == 'filing_fee':
                         fil = fil + get_col                                            
-                        
-                    if demo == sheet.cell(rx,3).value or pur == sheet.cell(rx,5).value or fil == sheet.cell(rx,9).value or dup == sheet.cell(rx,7).value:
+                    
+                    if header_name[cx] == 'rate_demo' and demo == sheet.cell(rx,cx).value or header_name[cx] == 'rate_pur' and pur == sheet.cell(rx,cx).value or header_name[cx] == 'rate_duplicate' and dup == sheet.cell(rx,cx).value or header_name[cx] == 'rate_ff' and fil == sheet.cell(rx,cx).value:  
+                        #print 'demo: ', demo
+                        #print 'sheet.cell(rx,cx).value: ',sheet.cell(rx,cx).value
                         end_row = rx
                 ## for null value
                 elif cell.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
@@ -262,6 +275,7 @@ class SOA_detail_demodup_ImportForm(ImportExcelForm):
                 else:
                     get_col = unicode(sheet.cell(rx, cx).value)
 
+                print 'end_row: ',end_row
                 values.append(get_col)            
             ## original script        
             #values = map(lambda cell: cell.value, row)            
@@ -288,6 +302,7 @@ class SOA_detail_demodup_ImportForm(ImportExcelForm):
             indicator = 0                 
             id_indicator = 0
             # assign to dict the values from excel 
+
             for i in range(len(header_name)):
                 
                 # take all field names from model
@@ -313,6 +328,7 @@ class SOA_detail_demodup_ImportForm(ImportExcelForm):
                     if header_name[i] == model_field.name and indicator < 3 and header_name[i] != 'id':
                         # update dict if found
                         rec_fields[header_name[i]] = soa_detail[i]
+                #print 'rec_fields[header_name[%s]=%s' %(i, soa_detail[i])
             
             instance        = SOA.objects.get(pk=int(soa_detail[len(header_name)-1]))
             if id_indicator == 1: ## insert only when id value exist     
@@ -365,7 +381,7 @@ class PPPImportForm(ImportExcelForm):
                         em_list = EquipModel.objects.filter(make=ppp_detail[i])
                         for record in em_list[1:]:
                             # delete double entry
-                            print 'Deleting EquipModel id :', record.id
+                            #print 'Deleting EquipModel id :', record.id
                             record.delete()
                         makemodel_instance = EquipModel.objects.get(make=ppp_detail[i])
 
@@ -378,18 +394,18 @@ class PPPImportForm(ImportExcelForm):
                         #print 'try sitename_instance: ', sitename_instance
                     except Sitename.DoesNotExist:
                         sitename = Sitename.objects.create(site=str(ppp_detail[i]), carrier=carrier_instance)
-                        print 'sitename created'
+                        #print 'sitename created'
                         sitename.save()
-                        print 'sitename.save()'
+                        #print 'sitename.save()'
                         sitename_instance = Sitename.objects.get(site=ppp_detail[i], carrier=carrier_instance)
-                        print 'except sitename_instance: ', sitename_instance
+                        #print 'except sitename_instance: ', sitename_instance
                     # for double entry
                     except Sitename.MultipleObjectsReturned:
-                        print 'Double entry'
+                        #print 'Double entry'
                         sitename_list = Sitename.objects.filter(site=ppp_detail[i], carrier=carrier_instance)
                         for record in sitename_list[1:]:
                             # delete double entry
-                            print 'Deleting Sitename id :', record.id
+                            #print 'Deleting Sitename id :', record.id
                             record.delete()
                         sitename_instance = Sitename.objects.get(site=ppp_detail[i], carrier=carrier_instance)
 
@@ -424,9 +440,10 @@ class PPPImportForm(ImportExcelForm):
             ## check for duplicate equipment
             check_dup = Equipment.objects.filter(Q(makemodel=rec_fields['makemodel']), 
                                                  Q(serialno=rec_fields['serialno']),
-                                                 Q(p_purchase=rec_fields['p_purchase']),
-                                                 Q(p_possess=rec_fields['p_possess']),
-                                                 Q(p_storage=rec_fields['p_storage']),)
+                                                 #Q(p_purchase=rec_fields['p_purchase']),
+                                                 #Q(p_possess=rec_fields['p_possess']),
+                                                 #Q(p_storage=rec_fields['p_storage']),
+                                                 )
             if not check_dup:                
                 """ Equipment table is ready to accept new record """
                 try:
@@ -434,21 +451,30 @@ class PPPImportForm(ImportExcelForm):
                     #print 'insert success'
                     # create record in EquipRack
                     EquipRack.objects.create(logbook=log_instance, equipment=new_eq)
-                    print 'EquipRack created'
+                    #print 'EquipRack created'
                     messages.success(request, 'Successfully inserted record(s).')
                 except:                
                     messages.error(request, 'Fail to insert record.')
-                    print 'insert not success'
+                    #print 'insert not success'
             else:
-                print 'Duplicate Equipment found.'
-                messages.error(request, 'Duplicate Record found for Make/Model: %s with serial no: %s' %(rec_fields['makemodel'], rec_fields['serialno']))
+                #print 'Duplicate Equipment found.'
+                if rec_fields['status'] == 'RECALL' or rec_fields['status'] == 'STO':
+                    for x in check_dup:
+                        x.status=rec_fields['status']
+                        x.p_storage=rec_fields['p_storage']
+                        x.save()
+                        #print 'update successful'
+                        # create record in EquipRack
+                        EquipRack.objects.create(logbook=log_instance, equipment=x)
+                        #print 'EquipRack created'
+                        messages.success(request, 'Record found for Make/Model: %s with serial no: %s has been updated.' %(rec_fields['makemodel'], rec_fields['serialno']))
 ### end import excel for PPP
 #ok!
 ### import excel for rsl
 class RSLImportForm(ImportExcelForm):
     ## added 01/13/2014    
     def get_converted_items(self, data):
-        print 'entered get converted', data['model_id']
+        print 'RSL entered get converted', data['model_id']
         if data['converted_items']:
             return data['converted_items']
         excel_file = data['excel_file']
@@ -607,33 +633,45 @@ class RSLImportForm(ImportExcelForm):
         
         for rsl_detail in converted_items[1:]:            
             # assign to dict the values from excel 
-            for i in range(len(header_location)-1):   # range of columns found in header_name                               
+            for i in range(len(header_location)-1):   # range of columns found in header_name     
                 if header_location[i] in num_fields:                    
+                    #print 'num rec_fields[%s]: %s' %(header_location[i], rsl_detail[i])       ### no old_make_1
                     if rsl_detail[i] != '':
                     #    rec_fields[header_location[i]] = None
                     #else:
                         rec_fields[header_location[i]] = float(rsl_detail[i])                    
                     #print 'num_fields: %s-%s' % (header_location[i], rsl_detail[i])                    
                 elif header_location[i] in date_fields:                 
+                    #print 'date rec_fields[%s]: %s' %(header_location[i], rsl_detail[i])       ### no old_make_1
                     if rsl_detail[i] != '':
                     #    rec_fields[header_location[i]] = None
                     #else:
                         rec_fields[header_location[i]] = rsl_detail[i]  
                     #print 'date_fields: ', header_location[i] 
-                else:
+                elif header_location[i] in char_fields:
+                    rec_fields[header_location[i]] = rsl_detail[i]
+                    #print 'rec_fields[%s]: %s' %(header_location[i], rsl_detail[i])       ### no old_make_1
                     if header_location[i] not in notable_fields:
                         #print 'rsl_detail[%s]: %s' %(i, rsl_detail[i])
                         rec_fields[header_location[i]] = rsl_detail[i]
-            #print '%s form_serial : %s' % (rec_fields['rslno'], rec_fields['form_serial'])
+                        #print 'rec_fields[%s]: %s' %(header_location[i], rsl_detail[i])
+
+                #print 'rec_fields[%s]: %s' %(header_location[i], rsl_detail[i])           ### no old_make_1
+            #print 'all output: ', rec_fields['logbook_cn']
+            #print '%s form_serial : %s' % (rec_fields['rslno'], rec_fields['form_serial']) 
+
             for i in range(len(header_location)-1):   # range of columns found in header_name     
                 # add permit to purchase, permit to possess, and permit to possess (storage)
                 # to all equivalent purchase1, purchase2, purchase3
+                #print 'rec_fields[old_make_1]: ', rec_fields[header_location[i]]
+                #print 'rec_fields[old_make_1]: ', rec_fields[header_location[i]]
                 for no_fields in range(len(notable_fields)):
                     if header_location[i] == notable_fields[no_fields] and rsl_detail[i]:
                         #print 'notable_fields: ', notable_fields[no_fields] 
                         ##check serial content
+
                         for x in range(1, sn_counter+1):
-                            sn = 'sn'+ str(x)
+                            sn = 'sn'+ str(x)                            
                             #print 'sn: ', sn
                             check_field = notable_fields[no_fields]+ str(x)
                             if sn in rec_fields and rec_fields[sn]:                            
@@ -642,6 +680,7 @@ class RSLImportForm(ImportExcelForm):
                                     rec_fields[check_field] = rsl_detail[i]
                                     #print 'rec_fields[%s]: %s' %(check_field, rsl_detail[i])
                                 #print 'if sn1 and %s exist follow value in rec_fields[%s]: %s' %(check_field, check_field, rec_fields[check_field])
+
                         for y in range(1, spare_sn_counter+1):
                             if y == 1:
                                 spare_sn = 'spare_equip_serial'                            
@@ -661,17 +700,27 @@ class RSLImportForm(ImportExcelForm):
                             #print 'rsl_detail[%s]: %s' %(i, rsl_detail[i])   
                             #print 'notable_fields: ', notable_fields[no_fields]                   
                             ##check old serial number content                      
+                            check_field = None
                             for old_sn in range(1, old_serial_counter+1):
                                 sn = 'old_serial_no_'+ str(old_sn)
-                                #print 'old_serial_no: ', sn
-                                check_field = notable_fields[no_fields]+ str(old_sn)
+                                #print 'old_serial_no: ', sn                                
+                                if not check_field:
+                                    check_field = notable_fields[no_fields]
+                                else:
+                                    check_field = notable_fields[no_fields]+ str(old_sn)
+                                #print 'check_field: ', check_field
                                 if sn in rec_fields and rec_fields[sn]:                            
                                     #print '%s: %s' % (notable_fields[no_fields], old_sn)
+                                    #print 'rec_fields: ', rec_fields
+                                    #if check_field in rec_fields:
+                                    #    print 'if check_field in rec_fields: YES'
+                                    #if not rec_fields[check_field]:
+                                    #    print 'not rec_fields[check_field]: YES'
                                     if check_field in rec_fields and not rec_fields[check_field]:
                                         rec_fields[check_field] = rsl_detail[i]
                                         #print 'rec_fields[%s]: %s' %(check_field, rsl_detail[i])
                                     #print 'if old serial and %s exist follow value in rec_fields[%s]: %s' %(check_field, check_field, rec_fields[check_field])
-            
+                        # old_make_1
             #print '%s form_serial : %s' % (rec_fields['rslno'], rec_fields['form_serial'])
            
             log_instance        = LogBook.objects.get(pk=int(rsl_detail[len(header_location)-1]))     ### id should be last number            
@@ -684,16 +733,16 @@ class RSLImportForm(ImportExcelForm):
             #encoder_instance    = User.objects.get(pk=int(obj_detail[141]))       ### User table
             #evaluator_instance  = User.objects.get(pk=int(obj_detail[141]))       ### User table
             #print 'check logbook id: ', int(rsl_detail[len(header_location)-1])
-            #print 'final output: ', rec_fields
+            #print 'final output: ', rec_fields['old_make_1']
             try:
                 LatestRsl.objects.create(logbook=log_instance, **rec_fields)
                 # empty dict
                 rec_fields.clear()
-                #print 'insert success'
+                print 'insert success'
                 messages.success(request, 'Successfully inserted record(s).')
             except:                
                 messages.error(request, 'Fail to insert record.')
-                #print 'insert not success'
+                print 'insert not success'
         ## end 01/13/2014
 ### end import excel for rsl
 #ok!
@@ -757,9 +806,9 @@ class ShortNameClarableFileInput(ClearableFileInput):
 #class SoadetailForm(forms.ModelForm):
 class SoadetailForm(autocomplete_light.ModelForm):
     sitename        = forms.CharField(required=False, label='Sitename', widget=forms.TextInput(attrs={'style':'width:200px; padding:0px;', 'autocomplete':'on',}))
-    site_no         = forms.CharField(required=False, label='Site No', widget=forms.TextInput(attrs={'style':'width:70px; padding:0px;', 'autocomplete':'on',}))
-    city            = forms.CharField(required=False, label='City', widget=forms.TextInput(attrs={'style':'width:100px; padding:0px;', 'autocomplete':'on',}))
+    site_no         = forms.CharField(required=False, label='Site No', widget=forms.TextInput(attrs={'style':'width:70px; padding:0px;', 'autocomplete':'on',}))    
     site_addr       = forms.CharField(required=True, label='Address', widget=forms.TextInput(attrs={'style':'width:200px; padding:0px;', 'autocomplete':'on',}))
+    city            = forms.CharField(required=False, label='City', widget=forms.TextInput(attrs={'style':'width:100px; padding:0px;', 'autocomplete':'on',}))
     band            = forms.CharField(required=False, label='Band', widget=forms.TextInput(attrs={'style':'width:46px; padding:0px;', 'autocomplete':'on',}))  
     call_sign       = forms.CharField(required=False, label='Call-Sign', widget=forms.TextInput(attrs={'style':'width:70px; padding:0px; text-align:right;',}))
     no_years        = forms.DecimalField(label='No.Yrs', widget=forms.TextInput(attrs={'style':'width:46px; padding:0px; text-align:center;',}))
