@@ -83,11 +83,13 @@
                     {% endif %}             
                     {% endif %}
                     {% if task.status == 'ENDORSEMENT' and task.current_user|upper == user|upper %}
+                    {{ task.id }} status here
                     <div><a class="undo-link" href="/logs/engr/undo/{{ task.id }}" style="font-size:14; font-weight:bold">Recall Endorsement</a></div>
                     {% endif %}
                     <span id="engr_action-here-{{ forloop.counter|cei:logs.number }}" class="engr_action">
+                        
                         {% if task.status not in 'PENDING' %}
-                        {% if task.status not in 'ENCODINGREVIEW' %}
+                        {% if task.status not in 'ENDORSEMENTENCODINGREVIEW' %}
                             {% if task.status not in 'SIGNATURE' %}
                                 {% include "admin/engr_action.html" %}
                             {% endif %}
@@ -95,7 +97,9 @@
                              {% if task.status in 'REVIEW' %}
                                 <div><a class="undo-link" href="/logs/engr/undo/{{ task.id }}" style="font-size:14; font-weight:bold">For correction</a></div>
                              {% else %}
+                                {% if task.status not in 'ENDORSEMENT' %}
                                 <div><a class="undo-link" href="/logs/engr/undo/{{ task.id }}" style="font-size:14; font-weight:bold">Re-assign</a></div>
+                                {% endif %}
                              {% endif %}
                         {% endif %}
                         {% endif %}                        
