@@ -627,11 +627,12 @@ class SOAdetailAdmin(admin.ModelAdmin):
 #### end Statement of Accounts ####
 #### Logbook #### OK!
 class LetterLogBookAdmin(admin.ModelAdmin):
-    list_display        = ['controlNo', 'dateEntry', 'letter_from', 'letter_to', 'subject']
+    list_display        = ['controlNo', 'dateEntry', 'letter_from', 'letter_to', 'subject','actiontaken']
     verbose_name_plural = 'Letter Logbook'
     date_hierarchy      = 'dateEntry'
     search_fields       = ['controlNo', 'letter_from', 'letter_to', 'subject']
-    actions              = [export_as_csv]
+    form                = LetterLogBookForm 
+    actions             = [export_as_csv]
 
     def get_readonly_fields(self, request, obj=None):
         return ['controlNo']
@@ -764,6 +765,23 @@ class LogBookAdmin(admin.ModelAdmin):
             print 'obj.units >= 20 and obj.transtype in RECALL'
             ext = 10
             start_ext = 11
+        
+        elif obj.noofstation < 20 and obj.transtype in 'MOD': 
+            print 'object less than 3: MOD'               
+            ext = 3
+            start_ext = 4
+        elif obj.noofstation >= 20 and obj.transtype in 'MOD': 
+            print 'obj.noofstation+obj.units >= 20 and and obj.transtype in MOD:'                             
+            ext = 10
+            start_ext = 11   
+        elif (obj.noofstation*2) >= 20 and obj.transtype in 'REN / MOD': 
+            print 'obj.noofstation x 2 >= 20 and obj.transtype in REN / MOD:'                             
+            ext = 10
+            start_ext = 11  
+        elif (obj.noofstation*2) < 20 and obj.transtype in 'REN / MOD': 
+            print 'obj.noofstation x 2 < 20 and : REN / MOD'               
+            ext = 3
+            start_ext = 4
         elif obj.noofstation+obj.units < 20 and obj.transtype in 'REN / MODPPPRECALL': 
             print 'object less than 3: REN / MODPPPRECALL'               
             ext = 3
@@ -960,7 +978,7 @@ class LatestRsl_v2Admin(admin.ModelAdmin):
     __metaclass__ = classmaker(right_metas=(ModelAdminWithForeignKeyLinksMetaclass,))
     inlines             = (EquipmentInline, Official_ReceiptInline)  
     form                = LatestRsl_v2Form
-    search_fields       = ['=rslno','=issued','logbook__controlNo', 'official_receipt__or_no', 'carrier__companyname', 'equipment__makemodel__make', 'form_serial', 
+    search_fields       = ['=rslno','logbook__controlNo', 'official_receipt__or_no', 'carrier__companyname', 'equipment__makemodel__make', 'form_serial', 
                            'evaluator__code_name', 'encoder__code_name', 'signatory__code_name', 'sitename__street', 'sitename__site', 'sitename__address__city',
                            'sitename__address__province', 'sitename__address__regioncode', 'equipment__serialno', 'equipment__callsign'] 
                            

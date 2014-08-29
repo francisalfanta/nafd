@@ -1066,3 +1066,9 @@ class DocFormatsForm(autocomplete_light.ModelForm):
     class Meta:
         model = DocFormats
         widgets = autocomplete_light.get_widgets_dict(DocFormats)
+
+class LetterLogBookForm(autocomplete_light.ModelForm):  
+    actiontaken = forms.CharField(label="Action taken", widget=forms.Textarea(), required=False)
+
+    class Meta:
+        model = Letter_LogBook
