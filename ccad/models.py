@@ -847,13 +847,17 @@ class Statements(models.Model):
             elif rec.rsl_units == 0 and rec.ppp_units > 0 and rec.stor_units == 0 and rec.suf_fees == 0:                
                 logbook.units = rec.ppp_units
                 print 'elif PPP :=0>0=0', logbook.units 
+            ## type NEW PPP
+            elif rec.channel > 0 and rec.rsl_units == 0 and rec.ppp_units >0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                logbook.units = rec.ppp_units
+                print 'rec.channel > 0 and rec.rsl_units == 0 and rec.ppp_units >0=0>0:', rec.ppp_units
             ## app type RSL
             elif rec.rsl_units > 0 and rec.channel == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
                 logbook.units = rec.rsl_units
                 print 'rec.rsl_units > 0=0:', rec.rsl_units
             ## ?
             elif rec.channel > 0 and rec.rsl_units == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
-                logbook.units = rec.rsl_units
+                logbook.units = rec.channel#rec.rsl_units
                 print 'rec.channel > 0=0:', rec.channel
             ## either channel or rsl_units is present
             elif rec.channel > 0 and rec.rsl_units > 0:# and rec.ppp_units == 0 and rec.stor_units == 0:

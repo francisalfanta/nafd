@@ -620,7 +620,8 @@ class SOAAdmin(admin.ModelAdmin):
 class SOAdetailAdmin(admin.ModelAdmin):
     __metaclass__ = classmaker(right_metas=(ModelAdminWithForeignKeyLinksMetaclass,))
     list_display        = ['sitename', 'link_to_soa', 'site_addr', 'call_sign', 'old_chan', 'channel', 'freq', 'bw', 'ppp_units', 'rsl_units', 'mod_units', 'stor_units']
-    search_fields       = ['call_sign', 'sitename', 'site_addr', 'city', 'band']        
+    search_fields       = ['call_sign', 'sitename', 'site_addr', 'city', 'band'] 
+    list_filter         = ['soa']       
     form = autocomplete_light.modelform_factory(SOA_detail)
     actions              = [export_as_csv]
  
@@ -975,8 +976,7 @@ class EquipmentAdmin(admin.ModelAdmin):
 #OK!            
 class LatestRsl_v2Admin(admin.ModelAdmin):
     #change_list_template = "admin/change_list_filter_sidebar.html"
-    __metaclass__ = classmaker(right_metas=(ModelAdminWithForeignKeyLinksMetaclass,))
-    inlines             = (EquipmentInline, Official_ReceiptInline)  
+    __metaclass__ = classmaker(right_metas=(ModelAdminWithForeignKeyLinksMetaclass,))    
     form                = LatestRsl_v2Form
     search_fields       = ['=rslno','logbook__controlNo', 'official_receipt__or_no', 'carrier__companyname', 'equipment__makemodel__make', 'form_serial', 
                            'evaluator__code_name', 'encoder__code_name', 'signatory__code_name', 'sitename__street', 'sitename__site', 'sitename__address__city',
@@ -996,6 +996,7 @@ class LatestRsl_v2Admin(admin.ModelAdmin):
         ('Remarks Info',       {'classes' : ('grp-collapse grp-open',),
                                 'fields' : ('remarks', ('encoder', 'evaluator'), 'signatory')})        
         ]
+    inlines             = (EquipmentInline, Official_ReceiptInline,)  
     actions              = [export_as_csv]
     # when readonly_fields on saving is not possible
     #readonly_fields     = ('sitename_street', 'sitename_province', 'sitename_region',  'lic_to_operate', 'sitename_city', 'sitename_latitude', 'sitename_longitude')
@@ -1071,7 +1072,7 @@ admin.site.register(DocFormats, DocFormatsAdmin)
 ''' Depreciated in Django 1.5
 admin.site.unregister(User)
 '''
-class MyUserAdmin(UserAdmin):  
+class MyUserAdmin(UserAdmin):
     form     = MyUserChangeForm   
     add_form = MyUserCreationForm 
     fieldsets = (
