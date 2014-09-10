@@ -30,7 +30,7 @@ class EquipmentForm(autocomplete_light.ModelForm):
     #status         = forms.ChoiceField(label='Status', widget=forms.TextInput(attrs={'style':'width:70px; padding:0px; ',}))
     makemodel      = forms.ModelChoiceField(queryset=EquipModel.objects.all(), label="Make / Model", widget=autocomplete_light.ChoiceWidget('EquipModelAutocomplete', attrs={'style':'width:280px;',}))    
     serialno       = forms.CharField(label='Serial No.', widget=forms.TextInput(attrs={'style':'width:280px; padding:0px;',}))
-    power          = forms.CharField(label='Power', widget=forms.TextInput(attrs={'style':'width:280px; padding:0px; ',}))
+    power          = forms.DecimalField(label='Power', widget=forms.TextInput(attrs={'style':'width:280px; padding:0px; ',}))
     bwe            = forms.CharField(label='Bandwidth', widget=forms.TextInput(attrs={'style':'width:280px; padding:0px; ',}))
     #usage          = forms.ChoiceField(label='Equipment Usage', widget=forms.TextInput(attrs={'style':'width:70px; padding:0px; ',}))
     freqrange_low  = forms.DecimalField(label='1: Minimum Freq Range', widget=forms.TextInput(attrs={'style':'width:280px; padding:0px; ',}))
@@ -558,7 +558,6 @@ class RSLImportForm(ImportExcelForm):
             
             r.append(values)                                  
             ## end added 
-
             converted_items.append(values)
         
         return converted_items

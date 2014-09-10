@@ -635,7 +635,7 @@ class Equipment(models.Model):
     rx              = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
     rx_max          = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)    
     bwe             = models.CharField(max_length=50, blank=True, null=True, verbose_name="Bandwidth")
-    power           = models.DecimalField(max_digits=10,  decimal_places=0, blank=True, null=True, verbose_name="Power" )
+    power           = models.DecimalField(max_digits=15,  decimal_places=4, blank=True, null=True, verbose_name="Power" )
     unit            = models.CharField(max_length=40, choices=POWER_UNIT, default=u'dBm', verbose_name='Unit')   
     p_purchase      = models.CharField(max_length=50, blank=True, null=True, verbose_name='Purchase')
     p_possess       = models.CharField(max_length=50, blank=True, null=True, verbose_name='Possess')

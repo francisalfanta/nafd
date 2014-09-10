@@ -37,7 +37,7 @@
         <div class="value-field">{% firstof instance.carrier.companyname 'no data' %}</div>
     </div>
     <div class="left-table-row"><div class="name-field">Task <span class="colon-field">:</span></div>        
-        <div class="value-field">{% firstof data.units 'unknown' %} unit{{ instance.units|pluralize }} for                                 
+        <div class="value-field">{% firstof instance.units 'unknown' %} unit{{ instance.units|pluralize }} for                                 
                                  {% if instance.transtype == "RENMOD" %}
                                   renewal/modification
                                  {% endif %}
