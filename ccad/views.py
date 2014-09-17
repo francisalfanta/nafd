@@ -724,7 +724,7 @@ def app_detail(request, detail, pk):    # for showing 'More Details'
                 eq_filter_list = equiprack_list
                 #print 'Default eq_filter_list: ', eq_filter_list
                 pass
-        elif 'STO' in instance.transtype:            
+        elif 'STO' in instance.transtype or 'RECALL' in instance.transtype:            
             if instance.permitNo:
                 eq_filter_list = equiprack_list.filter(equipment__p_storage=instance.permitNo)           
                 #print 'STO equip list: ', equip_list
@@ -751,20 +751,31 @@ def app_detail(request, detail, pk):    # for showing 'More Details'
                 old_entry = date(2000,1,1)
                 
                 for rsl_object in rsl_queryset:
-            
-                    if rsl_object.latestrsl_v2.sitename:
-                        if rsl_object.latestrsl_v2.sitename.site:
-                            #print 'sitename exist for: %s-%s' % (eq.makemodel.make, eq.serialno)
+                    try:
+                        if rsl_object.latestrsl_v2.sitename:
+                            if rsl_object.latestrsl_v2.sitename.site:
+                                #print 'sitename exist for: %s-%s' % (eq.makemodel.make, eq.serialno)
+                                new_entry = rsl_object.latestrsl_v2.issued
+                                #print 'new entry: ', new_entry
+                                if new_entry > old_entry:                       ## get the latest issued RSL for the mention Equipment                                   
+                                    old_entry = rsl_object.latestrsl_v2.issued                           
+                                    sitename  = rsl_object.latestrsl_v2.sitename.site     ## specify the Sitename
+                                    rslid     = rsl_object.latestrsl_v2                   ## specify latest rsl id 
+                                    #print 'rsl id: ', rslid
+                            else:
+                                #print 'NO sitename for: %s-%s' % (eq.makemodel.make, eq.serialno)
+                                pass
+                    except AttributeError:
+                        try:
                             new_entry = rsl_object.latestrsl_v2.issued
-                            #print 'new entry: ', new_entry
                             if new_entry > old_entry:                       ## get the latest issued RSL for the mention Equipment                                   
-                                old_entry = rsl_object.latestrsl_v2.issued                           
-                                sitename  = rsl_object.latestrsl_v2.sitename.site     ## specify the Sitename
-                                rslid     = rsl_object.latestrsl_v2                   ## specify latest rsl id 
-                                #print 'rsl id: ', rslid
-                        else:
-                            #print 'NO sitename for: %s-%s' % (eq.makemodel.make, eq.serialno)
-                            pass
+                                old_entry = rsl_object.latestrsl_v2.issued
+                                rslid     = rsl_object.latestrsl_v2                   ## specify latest rsl id  
+                        except AttributeError:
+                            new_entry = None
+                            old_entry = None
+                            rslid     = None
+                        
             except ObjectDoesNotExist:
                 rsl_queryset = LatestRsl_v2_Equipment.objects.none()
                 #print 'No rsl_queryset'
@@ -1014,6 +1025,7 @@ def kpi_data(request):
               
     if request.is_ajax():        
         show_user   = int(request.GET.get('user_stat'))    
+        print 'show_user: ', show_user
         apt = App_type.objects.all()
 
         try:

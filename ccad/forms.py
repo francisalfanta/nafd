@@ -178,6 +178,12 @@ class SOA_detail_ppprsl_ImportForm(ImportExcelForm):
             # reset indicators
             indicator = 0                 
             id_indicator = 0
+            
+            instance        = SOA.objects.get(pk=int(soa_detail[len(header_name)-1]))
+            # allowed with license no
+            lic_name_list = ['NEW', 'REN', 'DUP', 'MOD']
+            checker = False
+
             # assign to dict the values from excel 
             for i in range(len(header_name)):
                 
@@ -204,8 +210,28 @@ class SOA_detail_ppprsl_ImportForm(ImportExcelForm):
                     if header_name[i] == model_field.name and indicator < 3 and header_name[i] != 'id':
                         # update dict if found
                         rec_fields[header_name[i]] = soa_detail[i]
-            
-            instance        = SOA.objects.get(pk=int(soa_detail[len(header_name)-1]))
+                    ### added 09-17-2014             \
+                    if model_field.name == 'rsl_units':
+                        #print 'model_field'
+                        # find ccad_soa_app_type list
+                        soat_list = SOA_App_type.objects.filter(soa=instance)
+                        #print 'soat_list: ', soat_list
+                        for soat in soat_list:
+                            # find app_type
+                            rec_app_type = soat.app_type.trans_type
+                            print 'rec_app_type: ', rec_app_type
+                            
+                            if rec_app_type in lic_name_list:                    
+                                checker = True
+                        if checker:
+                            print 'soa_list: ', checker
+                            rec_fields['rsl_units'] = 1
+                        else:
+                            rec_fields['rsl_units'] = 0
+                        # reset values
+                        rec_app_type = None
+                        checker = False
+                        ### end add
             if id_indicator == 1: ## insert only when id value exist     
                 SOA_detail.objects.create(soa=instance, **rec_fields)               
 #ok~!
@@ -390,7 +416,7 @@ class PPPImportForm(ImportExcelForm):
                    
                 elif header_name[i] == 'sitename':                    
                     try:
-                        sitename_instance = Sitename.objects.get(site=ppp_detail[i], carrier=carrier_instance)
+                        sitename_instance = Sitename.objects.get(site=ppp_detail[i], carrier=carrier_instance)                        
                         #print 'try sitename_instance: ', sitename_instance
                     except Sitename.DoesNotExist:
                         sitename = Sitename.objects.create(site=str(ppp_detail[i]), carrier=carrier_instance)

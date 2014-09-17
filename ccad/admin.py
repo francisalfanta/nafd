@@ -73,6 +73,10 @@ def download_csv(modeladmin, request, queryset):
     return response
 download_csv.short_description = "Download selected as csv"
 
+def ifnull(var, val):
+    if var is None:
+        return val
+    return var
 # END TEST MODULE
 ###############################################################
 '''
@@ -323,7 +327,7 @@ class EquipmentInline(admin.TabularInline):
 #ok!            
 class MasterRslAdmin(admin.ModelAdmin):
     list_display        = ['rslno','issued','carrier','site','validity_to','encoder']
-    search_fields       = ['=rslno','=issued','carrier','validity_to','encoder','form_serial', 
+    search_fields       = ['=rslno','carrier','encoder','form_serial', 
                            'sn1', 'sn2', 'sn3', 'sn4', 'sn5', 'sn6', 'sn7', 'sn8',
                            'sn9', 'sn10', 'sn11', 'sn12', 'sn13', 'sn14', 'sn15',
                            'sn16', 'sn17', 'sn18', 'sn19', 'sn20', 'sn21', 'sn22',
@@ -378,7 +382,7 @@ class LatestRslAdmin(admin.ModelAdmin):
     form                = autocomplete_light.modelform_factory(LatestRsl)
     list_display        = ['rslno','issued','carrier','site', 'tx1','rx1', 'validity_to','longitude', 'latitude', 'encoder']
     save_as             = True
-    search_fields       = ['=rslno','=issued','longitude', 'latitude','site','carrier','validity_to','encoder','form_serial','callsign',
+    search_fields       = ['=rslno','longitude', 'latitude','site','carrier','encoder','form_serial','callsign',
 				   'sn1','sn2','sn3','sn4','sn5','sn6','sn7','sn8','sn9','sn10','sn11','sn12','sn13',
 				   'sn14','sn15','sn16','sn17','sn18','sn19','sn20','sn21','sn22','sn23','sn24']
     fieldsets           = [
@@ -741,6 +745,8 @@ class LogBookAdmin(admin.ModelAdmin):
         ext_added = 0
         ext = 0
         start_ext = 0
+        ppp_day = 1          ## added
+        recall_day = 1       ## added 
         ## value for due date
         if obj.units < 20 and obj.transtype in 'DEMO':
             print 'obj.units < 20 and obj.transtype in DEMO'
@@ -783,14 +789,14 @@ class LogBookAdmin(admin.ModelAdmin):
             print 'obj.noofstation x 2 < 20 and : REN / MOD'               
             ext = 3
             start_ext = 4
-        elif obj.noofstation+obj.units < 20 and obj.transtype in 'REN / MODPPPRECALL': 
-            print 'object less than 3: REN / MODPPPRECALL'               
-            ext = 3
-            start_ext = 4
-        elif obj.noofstation+obj.units >= 20 and obj.transtype in 'REN / MODPPPRECALL': 
+        elif ifnull(obj.noofstation,0)+ifnull(obj.units,0) < 20 and obj.transtype in 'REN / MODPPPRECALL': 
+            print 'object less than 3: REN / MODPPPRECALL'                          
+            ext = 3+ppp_day+recall_day
+            start_ext = 4+ppp_day+recall_day
+        elif ifnull(obj.noofstation,0)+ifnull(obj.units,0) >= 20 and obj.transtype in 'REN / MODPPPRECALL': 
             print 'obj.noofstation+obj.units >= 20 and and obj.transtype in REN / MODPPPRECALL:'                             
-            ext = 10
-            start_ext = 11        
+            ext = 10+ppp_day+recall_day
+            start_ext = 11+ppp_day+recall_day        
         elif obj.noofstation < 20 and obj.transtype in 'RENNEWDUPREN / DUPDUP / REN':  
             print 'obj.noofstation < 20 and obj.transtype in RENNEWDUP:'               
             ext = 3
@@ -1065,6 +1071,9 @@ admin.site.register(EquipModel, EquipModelAdmin)
 admin.site.register(Antenna, AntennaAdmin)
 admin.site.register(Equipment, EquipmentAdmin)
 admin.site.register(LatestRsl_v2, LatestRsl_v2Admin)
+
+admin.site.register(LatestRsl, LatestRslAdmin)
+#admin.site.register(MasterRsl, MasterRslAdmin)
 
 admin.site.register(Suggestion_box, SuggestionboxAdmin)
 admin.site.register(DocFormats, DocFormatsAdmin)

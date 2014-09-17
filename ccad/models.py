@@ -18,6 +18,11 @@ from django.dispatch.dispatcher import receiver
 
 from datetime import timedelta, datetime
 
+def ifnull(var, val):
+    if var is None:
+        return val
+    return var
+
 #from ccad.models import no_work
 # Create your models here.
 
@@ -83,7 +88,8 @@ EQUIP_STATUS  = (
         ('REN','REN'),
         ('REN/MOD','REN/MOD'),
         ('MOD','MOD'),
-        ('STORAGE','STORAGE')
+        ('STORAGE','STORAGE'),
+        ('RECALL', 'RECALL')
     )  
 DIRECTORS = (
     ('Ariel Padilla', 'Ariel Padilla'),
@@ -277,6 +283,8 @@ class Carrier(models.Model):
     #modifiedby_id   = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
     #datemodified    = models.DateField(auto_now=True, null=True, blank=True)    
     c_initial       = models.CharField(null=True, max_length=20, blank=True, verbose_name='Company Initial')
+    ntc_cn          = models.CharField(null=True, max_length=20, blank=True, verbose_name='NTC CN')                
+    remarks         = models.CharField(null=True, max_length=2000, blank=True, verbose_name='Remarks')
 
     def __unicode__(self):
         return self.companyname
@@ -610,7 +618,8 @@ class PPPfiles(models.Model):
         return u'%s' % (self.logbook)
 # New Equip Table to be implemented
 def get_sentinel_equipmodel():
-    return EquipModel.objects.get(make='NO MODEL')
+    #return EquipModel.objects.get(make='NO MODEL')
+    return EquipModel.objects.get(id=1366)           ### added
 #ok!
 class Equipment(models.Model):
     id              = models.AutoField(primary_key=True)  
@@ -754,7 +763,7 @@ class LatestRsl_v2(models.Model):
    
     class Meta:
         #db_table            = u'latest_rsl'
-        verbose_name_plural = "Latest Radio Station Licenses"
+        verbose_name_plural = "Latest Radion Station Licenses version 2"
         verbose_name        = "Radio Station License"
         ordering            = ["issued"]
         permissions=(
@@ -2261,7 +2270,7 @@ class LatestRsl(models.Model):
 
     class Meta:
         db_table            = u'latest_rsl'
-        verbose_name_plural = "Latest RSLs"
+        verbose_name_plural = "Latest Radion Station Licenses version 1"
         verbose_name        = "Latest RSL"
         ordering            = ["issued"]
     def __unicode__(self):
@@ -2439,6 +2448,109 @@ def LogBook_controlNo(sender, instance, **kwargs):
             instance.engr_status  = 4;
             instance.chief_status = 4;
         # end added 07-23-2014        
+
+    ## added 09-17-2014
+    print 'added 09-17-2014'
+    # loop thru the days
+    added = 0     
+    ext_added = 0
+    ext = 0
+    start_ext = 0
+    ppp_day = 1          ## added
+    recall_day = 1       ## added 
+    if instance.units < 20 and instance.transtype in 'DEMO':
+        print 'instance.units < 20 and instance.transtype in DEMO'
+        ext = 3
+        start_ext = 4
+    elif instance.units >= 20 and instance.transtype in 'DEMO':
+        print 'instance.units >= 20 and instance.transtype in DEMO'
+        ext = 10
+        start_ext = 11
+    elif instance.units < 20 and instance.transtype in 'PPP':
+        print 'instance.units < 20 and instance.transtype in PPP'
+        ext = 1
+        start_ext = 2
+    elif instance.units >= 20 and instance.transtype in 'PPP':
+        print 'instance.units >= 20 and instance.transtype in PPP'
+        ext = 10
+        start_ext = 11
+    elif instance.units < 20 and instance.transtype in 'RECALL':
+        print 'instance.units < 20 and instance.transtype in RECALL'
+        ext = 1
+        start_ext = 2
+    elif instance.units >= 20 and instance.transtype in 'RECALL':
+        print 'instance.units >= 20 and instance.transtype in RECALL'
+        ext = 10
+        start_ext = 11
+    
+    elif instance.noofstation < 20 and instance.transtype in 'MOD': 
+        print 'instanceect less than 3: MOD'               
+        ext = 3
+        start_ext = 4
+    elif instance.noofstation >= 20 and instance.transtype in 'MOD': 
+        print 'instance.noofstation+instance.units >= 20 and and instance.transtype in MOD:'                             
+        ext = 10
+        start_ext = 11   
+    elif (instance.noofstation*2) >= 20 and instance.transtype in 'REN / MOD': 
+        print 'instance.noofstation x 2 >= 20 and instance.transtype in REN / MOD:'                             
+        ext = 10
+        start_ext = 11  
+    elif (instance.noofstation*2) < 20 and instance.transtype in 'REN / MOD': 
+        print 'instance.noofstation x 2 < 20 and : REN / MOD'               
+        ext = 3
+        start_ext = 4
+    elif (ifnull(instance.noofstation,0)*2)+ifnull(instance.units,0) >= 20 and instance.transtype in 'NEW' or instance.transtype in 'NEW / PPP': 
+        print 'instance.noofstation x 2 + instance.units >= 20 and instance.transtype in NEW:'                             
+        ext = 10+ppp_day
+        start_ext = 11+ppp_day
+    elif (ifnull(instance.noofstation,0)*2)+ifnull(instance.units,0) < 20 and instance.transtype in 'NEW' or instance.transtype in 'NEW / PPP': 
+        print 'instance.noofstation x 2 + instance.units < 20 and : NEW'               
+        ext = 3+ppp_day
+        start_ext = 4+ppp_day
+    elif ifnull(instance.noofstation,0)+ifnull(instance.units,0) < 20 and instance.transtype in 'REN / MODPPPRECALL': 
+        print 'instanceect less than 3: REN / MODPPPRECALL'                          
+        ext = 3+ppp_day+recall_day
+        start_ext = 4+ppp_day+recall_day
+    elif ifnull(instance.noofstation,0)+ifnull(instance.units,0) >= 20 and instance.transtype in 'REN / MODPPPRECALL': 
+        print 'instance.noofstation+instance.units >= 20 and and instance.transtype in REN / MODPPPRECALL:'                             
+        ext = 10+ppp_day+recall_day
+        start_ext = 11+ppp_day+recall_day        
+    elif instance.noofstation < 20 and instance.transtype in 'RENDUPREN / DUPDUP / REN':  
+        print 'instance.noofstation < 20 and instance.transtype in RENDUP:'               
+        ext = 3
+        start_ext = 4
+    elif instance.noofstation >= 20 and instance.transtype in 'RENDUPREN / DUPDUP / REN':  
+        print 'instance.noofstation >= 20 and instance.transtype in RENDUP:'               
+        ext = 10
+        start_ext = 11
+    print 'ext: ', ext
+    print 'start_ext: ', start_ext
+    for i in range(1, ext+1):
+        due = instance.acceptancedate+timedelta(days=i)
+        # check holidays in no_work table
+        holiday_instance = no_work.objects.filter(Q(nowork_day__month=due.month) & Q(nowork_day__day=due.day))  
+        if due.isoweekday() == 6 or due.isoweekday() == 7 or holiday_instance.exists():                    
+            added +=1
+            print 'no work days found: ', added
+    # range up to 30 days set can be extended as needed
+    for i in range(start_ext, 30):                                    
+        due = instance.acceptancedate+timedelta(days=i)
+        ext_hol_instance = no_work.objects.filter(Q(nowork_day__month=due.month) & Q(nowork_day__day=due.day))
+        # checking beyond 3 days if its weekend
+        if not (ext_hol_instance.exists() or (due.isoweekday() == 6 or due.isoweekday() == 7)) and not (added == 0):                
+            # days left to add
+            added = added -1
+            print '30 files more added: ', added
+            # the day is working day                
+            ext_added = i                    
+            print '30 files ext_added', ext_added                
+    print 'inside pre_save ext_added :', ext_added
+    print 'added :', added
+    if ext_added == 0:
+        instance.due_date = instance.acceptancedate+timedelta(days=ext+added)
+    else:     
+        instance.due_date = instance.acceptancedate+timedelta(days=ext_added)   
+        ## end addded -09-17-2014
 #ok!
 # temporary disable while uploading previous SOA
 @receiver(pre_save, sender=SOA)

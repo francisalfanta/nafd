@@ -149,7 +149,7 @@ function ppp_popupWindow(id, type){
       opts          = ''; 
   //alert('transtype: '+ transtype.indexOf("RECALL"));
   //alert('transtype: '+ transtype);
-  if (transtype.indexOf("NEW")>=0 || transtype.indexOf("PPP")>=0 || transtype.indexOf("TP")>=0 || transtype.indexOf("DEMO")>=0 || transtype.indexOf("STO")>=0){                   
+  if (transtype.indexOf("NEW")>=0 || transtype.indexOf("PPP")>=0 || transtype.indexOf("TP")>=0 || transtype.indexOf("RECALL")>=0 || transtype.indexOf("DEMO")>=0 || transtype.indexOf("STO")>=0){                   
 
       opts          = 'status=1' +
                       ',width='  + width  +
