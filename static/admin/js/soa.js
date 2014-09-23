@@ -131,7 +131,22 @@
         //$('.grp-td.sur_lic_percent input, .grp-td.sur_lic input, .grp-td.sur_suf_percent input, .grp-td.sur_suf input').val(0);
       }     
     }
-        
+      
+    function toggle_cp(status){
+      if (status == 1) {
+        // show License
+        $('input#id_app_type_11').prop('checked', true);
+        //$('.grp-th.no-chan, .grp-th.no-lic, .grp-th.lic, .grp-th.if, .grp-th.lic-dst').show();
+        //$('.grp-td.channel, .grp-td.rsl_units, .grp-td.license_fee, .grp-td.inspection_fee, .grp-td.rsl_dst_fee').show();                    
+      }else if (status ==0) {
+        // hide License
+        $('input#id_app_type_11').removeAttr('checked');
+        //$('.grp-th.no-chan, .grp-th.no-lic, .grp-th.lic, .grp-th.if, .grp-th.lic-dst').hide();
+        //$('.grp-td.channel, .grp-td.rsl_units, .grp-td.license_fee, .grp-td.inspection_fee, .grp-td.rsl_dst_fee').hide();
+        //$('.grp-td.channel input, .grp-td.rsl_units input, .grp-td.license_fee input, .grp-td.inspection_fee input, .grp-td.rsl_dst_fee input').val(0);
+      }
+    }
+
     $(document).ready(function(){     
         // Initialize inline table                        
         //$('div#soa_detail_set-group').show();
@@ -265,6 +280,7 @@
             $("input#id_app_type_2").prop('checked', true);
             $("input#id_app_type_9").prop('checked', true);
             $("input#id_app_type_10").prop('checked', true);
+            $("input#id_app_type_11").prop('checked', true);
             //toggle_ppp(1); // show PPP         
             //toggle_suf(1); // show SUF
             //toggle_newlic(1); // show License            
@@ -272,6 +288,7 @@
             $("input#id_app_type_2").prop('checked', false);
             $("input#id_app_type_9").prop('checked', false);
             $("input#id_app_type_10").prop('checked', false);
+            $("input#id_app_type_11").prop('checked', false);
             //toggle_ppp(0); // hide PPP
             //toggle_suf(0); // hide SUF
             //toggle_newlic(0); // hide License            
@@ -282,27 +299,29 @@
           if($(this).is(':checked')){
             $("input#id_app_type_2").prop('checked', true);
             $("input#id_app_type_6").prop('checked', true);
-            $("input#id_app_type_9").prop('checked', true);
-            $("input#id_app_type_10").prop('checked', true);
+            //$("input#id_app_type_9").prop('checked', true);
+            //$("input#id_app_type_10").prop('checked', true);
+            $("input#id_app_type_11").prop('checked', true);
             //toggle_mod(1); // show MOD
           }else{
             $("input#id_app_type_2").prop('checked', false);
             $("input#id_app_type_6").prop('checked', false);
-            $("input#id_app_type_9").prop('checked', false);
-            $("input#id_app_type_10").prop('checked', false);
+            //$("input#id_app_type_9").prop('checked', false);
+            //$("input#id_app_type_10").prop('checked', false);
+            $("input#id_app_type_11").prop('checked', false);
             //toggle_mod(0); // hide MOD
           }
         });
         // Only Ren
         $("input#id_app_type_5").on("click", function(e){ 
           if($(this).is(':checked')){
-            $("input#id_app_type_10").prop('checked', true);
-            //toggle_suf(1); // show SUF
+            //$("input#id_app_type_10").prop('checked', true);
+            toggle_suf(1); // show SUF
             //toggle_renewlic(1); // show License            
             //toggle_sur(1); // show Surcharge
           }else{
-            $("input#id_app_type_10").prop('checked', false);
-            //toggle_suf(0); // hide SUF
+            //$("input#id_app_type_10").prop('checked', false);
+            toggle_suf(0); // hide SUF
             //toggle_renewlic(0); // hide License            
             //toggle_sur(0); // hide Surcharge            
           }

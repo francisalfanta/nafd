@@ -547,7 +547,11 @@ def logbook(request, rb_filterby=None):
                         log_audit = LogBook_audit.objects.get(logbook=instance, status='TASK COMPLETED')
                         if log_audit:
                             #print 'Status is Task Completed.'
-                            if log_audit.log_in < instance.due_date:
+                            x = log_audit.log_in
+                            print 'Task Completed :', log_audit.log_in
+                            y = instance.due_date
+                            #if log_audit.log_in < instance.due_date:
+                            if date(x.year, x.month, x.day) <= date(y.year, y.month, y.day):
                                 #print 'Is Ontime'
                                 log_audit.is_ontime = True
                             else:
@@ -1008,8 +1012,9 @@ def kpi_data(request):
     prev_type = ''    
     prev_count = 0
     items = 0
+    include_only  = ['PPP', 'CP', 'REN', 'NEW', 'MOD', 'RECALL', 'TP', 'DEMO', 'DUP']  
+    include_only2 = ['PPP', 'CP', 'RSL', 'MOD', 'RECALL', 'TP', 'DEMO', 'DUP']  
 
-    include_only = ['PPP', 'CP', 'RSL', 'MOD', 'RECALL', 'TP', 'DEMO', 'DUP']  
     export_data = {} 
     for i in include_only:            
         export_data[i] = 0
@@ -1034,13 +1039,13 @@ def kpi_data(request):
                                           CASE \
                                             WHEN appt.trans_type LIKE 'PPP' \
                                             THEN sappt.ppp_units \
-                                            WHEN appt.trans_type LIKE 'CP' \
+                                            WHEN (sappt.const_fee > 0) and (appt.trans_type LIKE 'CP' or appt.trans_type LIKE 'NEW' or appt.trans_type LIKE 'MOD' or appt.trans_type LIKE 'TP') \
                                             THEN (sappt.const_fee/360) \
                                             WHEN appt.trans_type LIKE 'MOD' \
                                             THEN sappt.mod_units \
                                             WHEN appt.trans_type LIKE 'RECALL' \
                                             THEN sappt.stor_units \
-                                            WHEN appt.trans_type LIKE 'RSL' \
+                                            WHEN appt.trans_type LIKE 'REN' or appt.trans_type LIKE 'NEW' \
                                             THEN sappt.rsl_units \
                                             WHEN appt.trans_type LIKE 'TP' \
                                             THEN sappt.rsl_units \
@@ -1080,36 +1085,12 @@ def kpi_data(request):
                                         WHERE appt.ID = sappt.sappt_apptid \
                                         AND appt.id = ccad_app_type.id \
                                         GROUP BY appt.trans_type, appt.id"""},
-                            select_params=(show_user,))
-            # possible queryset translation -- unfinished
-            # for i in include_only:
-            #     sappt_list = SOA_App_type.objects.select_related().filter(app_type__trans_type=i)
-            #     for sappt in sappt_list:
-            #         print sappt.app_type.trans_type # username transaction type             
-            #         logbook_list = sappt.soa.logbook_set.all()
-            #         for logbook in logbook_list:
-            #            logbook_audit_list = logbook.logbook_audit_set.filter(username__id=show_user)
-            #            if logbook_audit_list.count() > 0            
-            #                print 'Type: ', sappt.app_type.trans_type
-            #                if sappt.app_type.trans_type == 'PPP':
-            #                    print 'Units: ', sappt.soa.ppp_units
-            #                elif sappt.app_type.trans_type == 'CP':
-            #                    print 'Units: ', sappt.soa.const_fee/360 # 360 should be a parameter
-            #                elif sappt.app_type.trans_type == 'RSL':
-            #                    print 'Units: ', sappt.soa.rsl_units
-            #                elif sappt.app_type.trans_type == 'MOD':
-            #                    print 'Units: ', sappt.soa.mod_units
-            #                elif sappt.app_type.trans_type == 'RECALL':
-            #                    print 'Units: ', sappt.soa.stor_units
-            #                elif sappt.app_type.trans_type == 'TP':
-            #                    print 'Units: ', sappt.soa.rsl_units
-            #                elif sappt.app_type.trans_type == 'DUP':
-            #                    print 'Units: ', sappt.soa.duplicate_fee/120
-            #                elif sappt.app_type.trans_type == 'DEMO':
-            #                    print 'Units: ', sappt.soa.ppp_units
+                            select_params=(show_user,))         
 
             # for getting on time completed task
+            
             for i in include_only:
+                export_data['RSL_ontime'] = 0
                 sappt_list = SOA_App_type.objects.select_related().filter(app_type__trans_type=i)
                 ontime_count = 0          # resetting variables                         
                 current_type = i
@@ -1127,7 +1108,7 @@ def kpi_data(request):
                             elif i == 'CP':
                                 # applicable to basic fees not included VSAT or repeater Const Fee
                                 items = sappt.soa.const_fee/360            
-                            elif i == 'RSL':            
+                            elif i == 'REN' or i == 'NEW':            
                                 items = sappt.soa.rsl_units            
                             elif i == 'MOD':        
                                 items = sappt.soa.mod_units            
@@ -1143,12 +1124,20 @@ def kpi_data(request):
                             if ontime:
                                 # initialize if prev_type is not empty
                                 if current_type == prev_type:
-                                    export_data[i+'_ontime']=items+prev_count
-                                    #print 'export_data[%s_ontime] : %s where prov_count is: %s' %(i,items+prev_count, prev_count)
+                                    if i == 'REN' or i == 'NEW':
+                                        export_data['RSL_ontime']=export_data['RSL_ontime']+items+prev_count
+                                        print 'export_data[RSL_ontime] : %s where prov_count is: %s - %s user' %(items+prev_count, prev_count, show_user)
+                                    else:
+                                        export_data[i+'_ontime']=items+prev_count
+                                        print 'export_data[%s_ontime] : %s where prov_count is: %s - %s user' %(i,items+prev_count, prev_count, show_user)
                                 # if prev_type is empty:
                                 else:
-                                    export_data[i+'_ontime']=items
-                                    #print 'export_data[%s_ontime] : %s' %(i, items)
+                                    if i == 'REN' or i == 'NEW':
+                                        export_data['RSL_ontime']=export_data['RSL_ontime']+items
+                                        print 'export_data[RSL_ontime] : %s - %s user' %(items, show_user)
+                                    else:
+                                        export_data[i+'_ontime']=items
+                                        print 'export_data[%s_ontime] : %s - %s user' %(i, items, show_user)
                                 prev_type = i
                                 prev_count = items         
                             # reset
@@ -1156,19 +1145,24 @@ def kpi_data(request):
 
         except  (ValueError, ObjectDoesNotExist):
             print 'Error in evaluating apt2.'        
-    
-        for rec in apt2:            
-            if rec.trans_type in include_only:
+        
+        export_data['RSL'] = 0
+        for rec in apt2:      
+            #if rec.trans_type in include_only:
+            if rec.trans_type in include_only and (rec.trans_type != 'NEW' or rec.trans_type != 'REN'):                 
                 export_data[rec.trans_type]=rec.units            
+            if rec.trans_type == 'NEW' or rec.trans_type == 'REN':
+                export_data['RSL'] = export_data['RSL'] + rec.units
+            print 'rec.trans_type : %s with %s units' % (rec.trans_type, rec.units)
         # computing for include trans_type items completed beyond due date
-        for i in include_only:
+        for i in include_only2:
             #print 'export_data[%s]' %(export_data[i])
             #print 'export_data[on_time]: ', export_data[i+'_ontime']
             if export_data[i] ==None:
+                print 'export_data[%s]' % (i)
                 export_data[i] = 0 
             export_data[i+'_due']= export_data[i] - export_data[i+'_ontime'] 
-            #print 'export_data[%s]' %(i+'_due')         
-    
+            #print 'export_data[%s]' %(i+'_due')  
     else:
         message = "No XHR"
     

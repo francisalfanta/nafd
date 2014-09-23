@@ -538,7 +538,7 @@ class LogBook(models.Model):
     id              = models.AutoField(primary_key=True)        
     dateEntry       = models.DateField(auto_now=True, verbose_name="Date Entry", null=True, blank=True)
     acceptancedate  = models.DateField(default=datetime.now(), verbose_name="Date of Acceptance", null=True, blank=True, help_text="Date should not fall in holidays or weekend.", validators=[validate_theday])
-    controlNo       = models.CharField(null=True, blank=True, max_length=30,verbose_name = 'Control No', help_text="Auto fill-up")
+    controlNo       = models.CharField(null=True, blank=True, max_length=50,verbose_name = 'Control No', help_text="Auto fill-up")
     carrier         = models.ForeignKey(Carrier, null=True, verbose_name ='Public Carrier', on_delete=models.PROTECT)  
     transtype       = models.CharField(max_length=100, default='NEW', verbose_name='Application Type')
     service         = models.CharField(max_length=20, null=True, blank=True, choices=SERVICE_TYPE, verbose_name = 'Service Applied')    
@@ -918,13 +918,13 @@ class Statements(models.Model):
                     elif soap.app_type.trans_type != 'ALL' and app_type_names.rfind('ALL') == -1:
                         #print 'if mod is found no need to place ppp, sto or recall'
                         
-                        if app_type_names.rfind('MOD') >= 0 and (soap.app_type.trans_type == 'STO' \
-                            or soap.app_type.trans_type == 'RECALL' or soap.app_type.trans_type == 'PPP'):
+                        if app_type_names.rfind('MOD') >= 0 and (soap.app_type.trans_type == 'STO' or soap.app_type.trans_type == 'RECALL' or soap.app_type.trans_type == 'PPP'):
                             # Do nothing
-                            pass
+                            #pass
+                            app_type_names = soap.app_type.trans_type+' / '+app_type_names
                             #print 'Not inserting STO, PPP, RECALL once MOD is found'
-                        elif soap.app_type.trans_type == 'MOD' and (app_type_names.rfind('PPP') >= 0 or app_type_names.rfind('STO') >= 0 or app_type_names.rfind('RECALL') >= 0):
-                            app_type_names = app_type_names.replace('PPP','').replace('STO','').replace('RECALL','') +' / '+ soap.app_type.trans_type                    
+                        #elif soap.app_type.trans_type == 'MOD' and (app_type_names.rfind('PPP') >= 0 or app_type_names.rfind('STO') >= 0 or app_type_names.rfind('RECALL') >= 0):
+                        #    app_type_names = app_type_names.replace('PPP','').replace('STO','').replace('RECALL','') +' / '+ soap.app_type.trans_type                    
                             #print 'app_type_names if mod/ppp: ', app_type_names
                         else:
                             app_type_names = soap.app_type.trans_type+' / '+app_type_names
@@ -935,7 +935,8 @@ class Statements(models.Model):
             
             #print 'original app type name: ', app_type_names
             clean_app_type_name = app_type_names.replace('/  /','/').replace('//','/')
-            if len(clean_app_type_name) >= 17:
+            if len(clean_app_type_name) >= 21:
+                print 'length greater than or equal 21', clean_app_type_name
                 logbook.transtype = 'ALL'
             else:
                 logbook.transtype = clean_app_type_name
@@ -2448,17 +2449,49 @@ def LogBook_controlNo(sender, instance, **kwargs):
             instance.engr_status  = 4;
             instance.chief_status = 4;
         # end added 07-23-2014        
-
-    ## added 09-17-2014
-    print 'added 09-17-2014'
+    
     # loop thru the days
     added = 0     
     ext_added = 0
     ext = 0
     start_ext = 0
-    ppp_day = 1          ## added
-    recall_day = 1       ## added 
-    if instance.units < 20 and instance.transtype in 'DEMO':
+    ppp_day = 1          
+    recall_day = 1       
+    ### added 09/23/2014
+    endorsement_day = 0
+    endorsement_hour = 0
+    ### find endorsement period
+    try:
+        endorsement_sent = LogBook_audit.objects.filter(logbook__id=instance.id, status='ENDORSEMENT').latest('id')
+    except:
+        endorsement_sent = 0
+    try:
+        endorsement_rcvd = LogBook_audit.objects.filter(logbook__id=instance.id, status='ENCODING').latest('id')
+    except:
+        endorsement_rcvd = 0
+    ### check if endorsement exist
+    if endorsement_sent != 0 and endorsement_rcvd != 0:
+        endorsement_diff = endorsement_rcvd.log_in - endorsement_sent.log_in        
+        if endorsement_diff.total_seconds() % 86400 == 0:
+            endorsement_day = endorsement_diff.total_seconds()/86400
+        else:
+            v_diff = divmod(endorsement_diff.total_seconds(),86400)
+            endorsement_day = v_diff[0]
+            ### check for no. of hours
+            endorsement_hour = round(v_diff[1]/3600,0)       
+    else:
+        endorsement_day = 0
+
+
+    if instance.units < 20 and instance.transtype in 'ALL':
+        print 'instance.units < 20 and instance.transtype in ALL'
+        ext = 3+ppp_day+recall_day
+        start_ext = 4+ppp_day+recall_day
+    elif instance.units >= 20 and instance.transtype in 'ALL':
+        print 'instance.units >= 20 and instance.transtype in ALL'
+        ext = 10+ppp_day+recall_day
+        start_ext = 11+ppp_day+recall_day
+    elif instance.units < 20 and instance.transtype in 'DEMO':
         print 'instance.units < 20 and instance.transtype in DEMO'
         ext = 3
         start_ext = 4
@@ -2491,30 +2524,38 @@ def LogBook_controlNo(sender, instance, **kwargs):
         print 'instance.noofstation+instance.units >= 20 and and instance.transtype in MOD:'                             
         ext = 10
         start_ext = 11   
-    elif (instance.noofstation*2) >= 20 and instance.transtype in 'REN / MOD': 
+    elif (instance.noofstation*2) >= 20 and (instance.transtype in 'REN / MOD' or instance.transtype in 'REN / SUF / MOD'): 
         print 'instance.noofstation x 2 >= 20 and instance.transtype in REN / MOD:'                             
         ext = 10
         start_ext = 11  
-    elif (instance.noofstation*2) < 20 and instance.transtype in 'REN / MOD': 
+    elif (instance.noofstation*2) < 20 and (instance.transtype in 'REN / MOD' or instance.transtype in 'REN / SUF / MOD'): 
         print 'instance.noofstation x 2 < 20 and : REN / MOD'               
         ext = 3
         start_ext = 4
-    elif (ifnull(instance.noofstation,0)*2)+ifnull(instance.units,0) >= 20 and instance.transtype in 'NEW' or instance.transtype in 'NEW / PPP': 
+    elif ifnull(instance.noofstation,0)+ifnull(instance.units,0) >= 20 and instance.transtype in 'RECALL / REN': 
+        print 'instance.noofstation x 2 + instance.units >= 20 and instance.transtype in RECALL / REN:'                             
+        ext = 10+recall_day
+        start_ext = 11+recall_day
+    elif ifnull(instance.noofstation,0)+ifnull(instance.units,0) < 20 and instance.transtype in 'RECALL / REN': 
+        print 'instance.noofstation + instance.units < 20 and : RECALL / REN'               
+        ext = 3+recall_day
+        start_ext = 4+recall_day    
+    elif (ifnull(instance.units,0)+ifnull(instance.noofstation,0)) < 20 and instance.transtype in 'RECALL / MOD / PPP':
+        print 'instance.units < 20 and instance.transtype in RECALL / MOD / PPP'
+        ext = 3+ppp_day+recall_day
+        start_ext = 4+ppp_day+recall_day
+    elif (ifnull(instance.units,0)+ifnull(instance.noofstation,0)) >= 20 and instance.transtype in 'RECALL / MOD / PPP':
+        print 'instance.units >= 20 and instance.transtype in RECALL / MOD / PPP'
+        ext = 10+ppp_day+recall_day
+        start_ext = 11+ppp_day+recall_day   
+    elif (ifnull(instance.noofstation,0)*2)+ifnull(instance.units,0) >= 20 and (instance.transtype in 'NEW' or instance.transtype in 'NEW / PPP' or instance.transtype in 'NEW / PPP / SUF'  or instance.transtype in 'TP / NEW / PPP'  or instance.transtype in 'TP / NEW / PPP / SUF'): 
         print 'instance.noofstation x 2 + instance.units >= 20 and instance.transtype in NEW:'                             
         ext = 10+ppp_day
         start_ext = 11+ppp_day
-    elif (ifnull(instance.noofstation,0)*2)+ifnull(instance.units,0) < 20 and instance.transtype in 'NEW' or instance.transtype in 'NEW / PPP': 
+    elif (ifnull(instance.noofstation,0)*2)+ifnull(instance.units,0) < 20 and (instance.transtype in 'NEW' or instance.transtype in 'NEW / PPP' or instance.transtype in 'NEW / PPP / SUF'  or instance.transtype in 'TP / NEW / PPP'  or instance.transtype in 'TP / NEW / PPP / SUF'): 
         print 'instance.noofstation x 2 + instance.units < 20 and : NEW'               
         ext = 3+ppp_day
-        start_ext = 4+ppp_day
-    elif ifnull(instance.noofstation,0)+ifnull(instance.units,0) < 20 and instance.transtype in 'REN / MODPPPRECALL': 
-        print 'instanceect less than 3: REN / MODPPPRECALL'                          
-        ext = 3+ppp_day+recall_day
-        start_ext = 4+ppp_day+recall_day
-    elif ifnull(instance.noofstation,0)+ifnull(instance.units,0) >= 20 and instance.transtype in 'REN / MODPPPRECALL': 
-        print 'instance.noofstation+instance.units >= 20 and and instance.transtype in REN / MODPPPRECALL:'                             
-        ext = 10+ppp_day+recall_day
-        start_ext = 11+ppp_day+recall_day        
+        start_ext = 4+ppp_day       
     elif instance.noofstation < 20 and instance.transtype in 'RENDUPREN / DUPDUP / REN':  
         print 'instance.noofstation < 20 and instance.transtype in RENDUP:'               
         ext = 3
@@ -2546,10 +2587,13 @@ def LogBook_controlNo(sender, instance, **kwargs):
             print '30 files ext_added', ext_added                
     print 'inside pre_save ext_added :', ext_added
     print 'added :', added
+    print 'endorsement day: ', endorsement_day
+    print 'endorsement hour: ', endorsement_hour
+    
     if ext_added == 0:
-        instance.due_date = instance.acceptancedate+timedelta(days=ext+added)
+        instance.due_date = instance.acceptancedate+timedelta(days=ext+added+endorsement_day, hours=endorsement_hour)
     else:     
-        instance.due_date = instance.acceptancedate+timedelta(days=ext_added)   
+        instance.due_date = instance.acceptancedate+timedelta(days=ext_added+endorsement_day, hours=endorsement_hour)   
         ## end addded -09-17-2014
 #ok!
 # temporary disable while uploading previous SOA

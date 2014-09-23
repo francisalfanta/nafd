@@ -740,73 +740,16 @@ class LogBookAdmin(admin.ModelAdmin):
         css = { 'all' : ['css/logbook_css.css'], }
 
     def save_model(self, request, obj, form, change):
-        print 'entered LogbookAdmin save model'          
+        print 'entered LogbookAdmin save model'        
+
         added = 0     
         ext_added = 0
+
         ext = 0
         start_ext = 0
         ppp_day = 1          ## added
         recall_day = 1       ## added 
-        ## value for due date
-        if obj.units < 20 and obj.transtype in 'DEMO':
-            print 'obj.units < 20 and obj.transtype in DEMO'
-            ext = 3
-            start_ext = 4
-        elif obj.units >= 20 and obj.transtype in 'DEMO':
-            print 'obj.units >= 20 and obj.transtype in DEMO'
-            ext = 10
-            start_ext = 11
-        elif obj.units < 20 and obj.transtype in 'PPP':
-            print 'obj.units < 20 and obj.transtype in PPP'
-            ext = 1
-            start_ext = 2
-        elif obj.units >= 20 and obj.transtype in 'PPP':
-            print 'obj.units >= 20 and obj.transtype in PPP'
-            ext = 10
-            start_ext = 11
-        elif obj.units < 20 and obj.transtype in 'RECALL':
-            print 'obj.units < 20 and obj.transtype in RECALL'
-            ext = 1
-            start_ext = 2
-        elif obj.units >= 20 and obj.transtype in 'RECALL':
-            print 'obj.units >= 20 and obj.transtype in RECALL'
-            ext = 10
-            start_ext = 11
-        
-        elif obj.noofstation < 20 and obj.transtype in 'MOD': 
-            print 'object less than 3: MOD'               
-            ext = 3
-            start_ext = 4
-        elif obj.noofstation >= 20 and obj.transtype in 'MOD': 
-            print 'obj.noofstation+obj.units >= 20 and and obj.transtype in MOD:'                             
-            ext = 10
-            start_ext = 11   
-        elif (obj.noofstation*2) >= 20 and obj.transtype in 'REN / MOD': 
-            print 'obj.noofstation x 2 >= 20 and obj.transtype in REN / MOD:'                             
-            ext = 10
-            start_ext = 11  
-        elif (obj.noofstation*2) < 20 and obj.transtype in 'REN / MOD': 
-            print 'obj.noofstation x 2 < 20 and : REN / MOD'               
-            ext = 3
-            start_ext = 4
-        elif ifnull(obj.noofstation,0)+ifnull(obj.units,0) < 20 and obj.transtype in 'REN / MODPPPRECALL': 
-            print 'object less than 3: REN / MODPPPRECALL'                          
-            ext = 3+ppp_day+recall_day
-            start_ext = 4+ppp_day+recall_day
-        elif ifnull(obj.noofstation,0)+ifnull(obj.units,0) >= 20 and obj.transtype in 'REN / MODPPPRECALL': 
-            print 'obj.noofstation+obj.units >= 20 and and obj.transtype in REN / MODPPPRECALL:'                             
-            ext = 10+ppp_day+recall_day
-            start_ext = 11+ppp_day+recall_day        
-        elif obj.noofstation < 20 and obj.transtype in 'RENNEWDUPREN / DUPDUP / REN':  
-            print 'obj.noofstation < 20 and obj.transtype in RENNEWDUP:'               
-            ext = 3
-            start_ext = 4
-        elif obj.noofstation >= 20 and obj.transtype in 'RENNEWDUPREN / DUPDUP / REN':  
-            print 'obj.noofstation >= 20 and obj.transtype in RENNEWDUP:'               
-            ext = 10
-            start_ext = 11
-        #elif obj.units < 3 and obj.transtype in 'PPP':
-
+       
         # loop thru the days
         for i in range(1, ext+1):
             due = obj.acceptancedate+timedelta(days=i)

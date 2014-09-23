@@ -22,7 +22,8 @@ def nafd_staff(request):
     export_data = {}
     export_data['total']=0
     params = {}    
-    include_only = ['PPP', 'CP', 'RSL', 'MOD', 'RECALL', 'TP', 'DEMO', 'DUP']
+    include_only = ['PPP', 'CP', 'REN', 'NEW', 'MOD', 'RECALL', 'TP', 'DEMO', 'DUP']
+    include_only2 = ['PPP', 'CP', 'RSL', 'MOD', 'RECALL', 'TP', 'DEMO', 'DUP']
     for i in include_only:
         export_data[i] = 0     	
 
@@ -44,7 +45,7 @@ def nafd_staff(request):
                                             THEN sappt.mod_units \
                                             WHEN appt.trans_type LIKE 'RECALL' \
                                             THEN sappt.stor_units \
-                                            WHEN appt.trans_type LIKE 'RSL' \
+                                            WHEN appt.trans_type LIKE 'REN' or appt.trans_type LIKE 'NEW' \
                                             THEN sappt.rsl_units \
                                             WHEN appt.trans_type LIKE 'TP' \
                                             THEN sappt.rsl_units \
@@ -86,21 +87,37 @@ def nafd_staff(request):
                                         GROUP BY appt.trans_type, appt.id"""},
                             select_params=(staff.id,))
         # segregate by Application Type
+        export_data['RSL'] = 0
         for rec in apt2:
-            if rec.trans_type in include_only:
+            if rec.trans_type in include_only and (rec.trans_type != 'NEW' or rec.trans_type != 'REN'):                
                 if rec.units:
                     export_data[rec.trans_type]=rec.units.normalize()
                     #print 'contain rec.units: ', rec.units
                 else:
                     export_data[rec.trans_type]=Decimal(0)
                     #print 'no rec.units: ', rec.units
+            ## for NEW and REN
+            if rec.trans_type == 'NEW' or rec.trans_type == 'REN':
+                if rec.units:
+                    export_data['RSL'] = export_data['RSL'] + rec.units
+                    #print 'export_data[RSL] :%s - %s' %(export_data['RSL'],staff.id)
+                else:
+                    export_data['RSL']=Decimal(0)
+            #print 'overall export_data[RSL] :%s - %s' %(export_data['RSL'],staff.id)
+        #if export_data
         # get total
-        for i in include_only:
-            if export_data[i] ==None:
+        #for i in include_only:
+        for i in include_only2:
+            if export_data[i] == None:
                 export_data[i] = Decimal(0)
-                #print 'no rec.units: ', rec.units
+                #print 'no rec.units: ', rec.units   
+            if export_data[i] == 'NEW' or export_data[i] == 'REN':           
+                export_data['RSL'] = export_data['RSL'] + export_data[i]
+                #print 'trans type: ', export_data[i]
+            
             export_data.update(total=export_data['total'] + Decimal(export_data[i]).normalize())
             #print 'export_data[i]: ', export_data[i]
+            print 'export_data[%s] :%s - %s' %(i, export_data[i], staff.id)
 
         try:
             user_info = NAFD_User.objects.get(pk=staff.id)
