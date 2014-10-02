@@ -40,7 +40,7 @@ def nafd_staff(request):
                                             WHEN appt.trans_type LIKE 'PPP' \
                                             THEN sappt.ppp_units \
                                             WHEN appt.trans_type LIKE 'CP' \
-                                            THEN (sappt.const_fee/360) \
+                                            THEN round((sappt.const_fee/360),0) \
                                             WHEN appt.trans_type LIKE 'MOD' \
                                             THEN sappt.mod_units \
                                             WHEN appt.trans_type LIKE 'RECALL' \
@@ -117,7 +117,7 @@ def nafd_staff(request):
             
             export_data.update(total=export_data['total'] + Decimal(export_data[i]).normalize())
             #print 'export_data[i]: ', export_data[i]
-            print 'export_data[%s] :%s - %s' %(i, export_data[i], staff.id)
+            #print 'export_data[%s] :%s - %s' %(i, export_data[i], staff.id)
 
         try:
             user_info = NAFD_User.objects.get(pk=staff.id)

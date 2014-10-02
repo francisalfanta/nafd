@@ -17,6 +17,8 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.dispatch.dispatcher import receiver
 
 from datetime import timedelta, datetime
+from dateutil.relativedelta import relativedelta  # added
+from decimal import *                             # added 
 
 def ifnull(var, val):
     if var is None:
@@ -356,9 +358,9 @@ class SOA(models.Model):
     app_type        = models.ManyToManyField(App_type, verbose_name='Application Type')
     issued_by       = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='prepared_by', null=True, blank=True, on_delete=models.SET_NULL)
     approved_by     = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='approved_by', null=True, blank=True, on_delete=models.SET_NULL)
-    no_years        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=5, default=1, verbose_name='No. of Years')
+    no_years        = models.DecimalField(null=True, blank=True, decimal_places=1, max_digits=5, default=1, verbose_name='No. of Years')
     validity_from   = models.DateField(default=datetime.now(), null=True, blank=True, verbose_name='Validity from')
-    validity_to     = models.DateField(default=lambda:datetime.now()+timedelta(days=365), blank=True, verbose_name='Validity to')    
+    validity_to     = models.DateField(default=lambda:datetime.now()+timedelta(days=365.2425), blank=True, verbose_name='Validity to')    
     suf_fees        = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='SUFs')   
     filing_fee      = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Filing fee')    
     purchase_fee    = models.DecimalField(null=True, blank=True, decimal_places=2, max_digits=15, default=0, verbose_name='Purchase fee')
@@ -433,7 +435,7 @@ class SOA_detail(models.Model):
     city            = models.CharField(max_length=50, blank=True, null=True, verbose_name='City')                                               ######## added 
     band            = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='Band')               ######## added    
     call_sign       = models.CharField(null=True, blank=True, max_length=100, verbose_name='Call-Sign')   
-    no_years        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Years')    
+    no_years        = models.DecimalField(null=True, blank=True, decimal_places=1, max_digits=10, default=0, verbose_name='No. of Years')    
     old_chan        = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='Old No. of Chan')    
     channel         = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of Channel')    
     ppp_units       = models.DecimalField(null=True, blank=True, decimal_places=0, max_digits=10, default=0, verbose_name='No. of PPP Units')
@@ -837,59 +839,84 @@ class Statements(models.Model):
     def save(self, *args, **kwargs): 
         ## self.units 
         logbook = LogBook.objects.get(pk=self.logbook.id)
-        soa  = SOA.objects.filter(pk=self.soa.id)              
+        soa  = SOA.objects.filter(pk=self.soa.id) 
+
+        ### added 10/02/2014 #$$sign
+        v_units    = 0       
+        ### end            
         print 'Enter Save in Statements'
         for rec in soa:
             #print 'testing1:', rec.id
-            #print 'testing2:', rec.rsl_units 
+            #print 'testing2:', rec.rsl_units             
             check_if_mod = SOA_App_type.objects.select_related().filter(soa=rec.id, app_type=5).count()
             #print 'check_if_mod :', check_if_mod
             ## app type RECALL OK!
             if rec.rsl_units == 0 and rec.ppp_units == 0 and rec.stor_units > 0:
-                logbook.units = rec.stor_units
-                print 'elif RECALL/STORAGE =0=0>0:', logbook.units
+                #logbook.units = rec.stor_units
+                v_units = v_units + rec.stor_units                                  #$$sign
+                print 'elif RECALL/STORAGE =0=0>0:', v_units#logbook.units
             ## no units
             elif rec.rsl_units == 0 and rec.ppp_units == 0 and rec.stor_units == 0 and rec.channel == 0:
-                logbook.units = 0
-                print 'elif no units =0=0=0=0:', logbook.units 
+                #logbook.units = 0
+                v_units = 0                                                         #$$sign
+                print 'elif no units =0=0=0=0:', v_units#logbook.units 
             ## app type PPP OK!
             elif rec.rsl_units == 0 and rec.ppp_units > 0 and rec.stor_units == 0 and rec.suf_fees == 0:                
-                logbook.units = rec.ppp_units
-                print 'elif PPP :=0>0=0', logbook.units 
+                #logbook.units = rec.ppp_units
+                v_units = v_units + rec.ppp_units                                  #$$sign
+                print 'elif PPP :=0>0=0', v_units#logbook.units
             ## type NEW PPP
             elif rec.channel > 0 and rec.rsl_units == 0 and rec.ppp_units >0:# and rec.ppp_units == 0 and rec.stor_units == 0:
-                logbook.units = rec.ppp_units
-                print 'rec.channel > 0 and rec.rsl_units == 0 and rec.ppp_units >0=0>0:', rec.ppp_units
+                #logbook.units = rec.ppp_units
+                v_units = v_units + rec.ppp_units                                   #$$sign
+                print 'rec.channel > 0 and rec.rsl_units == 0 and rec.ppp_units >0=0>0:', v_units#rec.ppp_units
             ## app type RSL
             elif rec.rsl_units > 0 and rec.channel == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
-                logbook.units = rec.rsl_units
-                print 'rec.rsl_units > 0=0:', rec.rsl_units
+                #logbook.units = rec.rsl_units
+                v_units = v_units + rec.rsl_units                                   #$$sign
+                print 'rec.rsl_units > 0=0:', v_units#rec.rsl_units
             ## ?
             elif rec.channel > 0 and rec.rsl_units == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
-                logbook.units = rec.channel#rec.rsl_units
-                print 'rec.channel > 0=0:', rec.channel
+                #logbook.units = rec.channel#rec.rsl_units
+                v_units = v_units + rec.channel                                     #$$sign
+                print 'rec.channel > 0=0:', v_units#rec.channel
             ## either channel or rsl_units is present
             elif rec.channel > 0 and rec.rsl_units > 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
-                logbook.units = rec.channel
-                print 'either channel or rsl_units is present > 0>0:', rec.channel
+                #logbook.units = rec.channel
+                v_units = v_units + rec.channel                                     #$$sign
+                print 'either channel or rsl_units is present > 0>0:', v_units #rec.channel
                       
             ## app type MOD : combination of RSL, PPP and STORAGE OK!
             elif  check_if_mod > 0:
-                logbook.units = rec.stor_units + rec.ppp_units
-                print 'elif check_if_mod:', logbook.units                       
+                #logbook.units = rec.stor_units + rec.ppp_units
+                v_units = v_units + rec.stor_units + rec.ppp_units                  #$$sign
+                print 'elif check_if_mod:', v_units#logbook.units                       
             ## self.noofstation
+            logbook.units = v_units                                                 #$$sign            
+            stn_first  = None                                                       #$$sign
+            stn_last   = None                                                       #$$sign
+            v_stations = 0
             try:
                 station_list = SOA_detail.objects.filter(soa=rec.id)        
-                no_stations = station_list.count()
+                #no_stations = station_list.count()
+                v_stations = v_stations = station_list.count()                      #$$sign
                 #print 'station_list.first(sitename) : ',  station_list.first()
                 #print 'station_list.last(sitename) : ',  station_list.last()
-                stn_first = station_list.first()
-                stn_last = station_list.last()
-                #print 'stn_first.sitename :', stn_first.sitename[:29]
-                logbook.first_stn =  stn_first.sitename[:29]
-                logbook.last_stn = stn_last.sitename[:29]
-                if no_stations:
-                    logbook.noofstation =no_stations
+                # First Pass
+                if stn_first:                                                       #$$sign
+                    stn_last = station_list.last()                                  
+                    logbook.last_stn = stn_last.sitename[:29]                       
+                else:                                                               #$$sign
+                    stn_first = station_list.first()                
+                    #print 'stn_first.sitename :', stn_first.sitename[:29]
+                    logbook.first_stn =  stn_first.sitename[:29]
+                    stn_last = station_list.last()                                  
+                    logbook.last_stn = stn_last.sitename[:29]               
+                
+                #if no_stations:
+                if v_stations:                                                      #$$sign
+                    #logbook.noofstation =no_stations
+                    logbook.noofstation =v_stations                                 #$$sign
                 else:
                     logbook.noofstation = 0
             except:
@@ -899,6 +926,7 @@ class Statements(models.Model):
                 logbook.noofstation = 0
             ## self.service        
             logbook.service = rec.service_type
+            
             ## self.transtype
             soa_app_list = SOA_App_type.objects.select_related().filter(soa=rec.id)
             #print 'soa_app_list :', soa_app_list
@@ -943,7 +971,7 @@ class Statements(models.Model):
             ## add app type in control No.
             logbook.controlNo = logbook.controlNo[:13]+logbook.transtype
             
-            logbook.save()
+            logbook.save()       
         super(Statements, self).save(*args, **kwargs) # Call the "real" save() method.
 
     def delete(self, *args, **kwargs):
@@ -2461,28 +2489,25 @@ def LogBook_controlNo(sender, instance, **kwargs):
     endorsement_day = 0
     endorsement_hour = 0
     ### find endorsement period
+    ### added 10/02/2014 #$%sign
+    v_period_day = 0
+    v_period_hour =0
+    ### end 10/02/2014
     try:
-        endorsement_sent = LogBook_audit.objects.filter(logbook__id=instance.id, status='ENDORSEMENT').latest('id')
+        endorsement_sent_list = LogBook_audit.objects.filter(logbook__id=instance.id, status='ENDORSEMENT')
+        for es in endorsement_sent_list:                #$%sign
+            print 'Endorsement day: ', es.period_day    #$%sign
+            print 'Endorsement hour: ', es.period_hour  #$%sign
+            v_period_day = v_period_day+ es.period_day
+            v_period_hour= v_period_hour+ es.period_hour
     except:
-        endorsement_sent = 0
-    try:
-        endorsement_rcvd = LogBook_audit.objects.filter(logbook__id=instance.id, status='ENCODING').latest('id')
-    except:
-        endorsement_rcvd = 0
-    ### check if endorsement exist
-    if endorsement_sent != 0 and endorsement_rcvd != 0:
-        endorsement_diff = endorsement_rcvd.log_in - endorsement_sent.log_in        
-        if endorsement_diff.total_seconds() % 86400 == 0:
-            endorsement_day = endorsement_diff.total_seconds()/86400
-        else:
-            v_diff = divmod(endorsement_diff.total_seconds(),86400)
-            endorsement_day = v_diff[0]
-            ### check for no. of hours
-            endorsement_hour = round(v_diff[1]/3600,0)       
-    else:
+        print 'Error when trying to query for Endorsement Period List'
         endorsement_day = 0
+        endorsement_hour = 0
 
-
+    endorsement_day = int(v_period_day)
+    endorsement_hour = int(v_period_hour)
+    
     if instance.units < 20 and instance.transtype in 'ALL':
         print 'instance.units < 20 and instance.transtype in ALL'
         ext = 3+ppp_day+recall_day
@@ -2595,12 +2620,110 @@ def LogBook_controlNo(sender, instance, **kwargs):
     else:     
         instance.due_date = instance.acceptancedate+timedelta(days=ext_added+endorsement_day, hours=endorsement_hour)   
         ## end addded -09-17-2014
+
+    ### added 10/02/2014    #$$$sign
+    # update First and Last Station, No. of Units, No. of Stations
+    stm_list = Statements.objects.filter(logbook__id=instance.pk)                   #$$$sign
+    print 'Statements: ', stm_list.count()                                          #$$$sign
+    v_units    = 0
+    instance.first_stn =  ''                                                        #$$$sign   
+    instance.last_stn = ''                                                          #$$$sign
+    instance.noofstation = 0                                                        #$$$sign
+    instance.units = 0                                                              #$$$sign
+    for stm in stm_list:
+        soa_list  = SOA.objects.filter(pk=stm.soa.pk)
+        for soa in soa_list:
+            print 'SOA: ', soa.soa_code
+        #for rec in soa:
+            #print 'testing1:', rec.id
+            #print 'testing2:', rec.rsl_units 
+            check_if_mod = SOA_App_type.objects.select_related().filter(soa=soa.id, app_type=5).count()
+            #print 'check_if_mod :', check_if_mod
+            ## app type RECALL OK!
+            if soa.rsl_units == 0 and soa.ppp_units == 0 and soa.stor_units > 0:
+                #logbook.units = rec.stor_units
+                v_units = v_units + soa.stor_units                                  #$$sign
+                print 'elif RECALL/STORAGE =0=0>0:', v_units#logbook.units
+            ## no units
+            elif soa.rsl_units == 0 and soa.ppp_units == 0 and soa.stor_units == 0 and soa.channel == 0:
+                #logbook.units = 0
+                v_units = 0                                                         #$$sign
+                print 'elif no units =0=0=0=0:', v_units#logbook.units 
+            ## app type PPP OK!
+            elif soa.rsl_units == 0 and soa.ppp_units > 0 and soa.stor_units == 0 and soa.suf_fees == 0:                
+                #logbook.units = rec.ppp_units
+                v_units = v_units + soa.ppp_units                                  #$$sign
+                print 'elif PPP :=0>0=0', v_units#logbook.units
+            ## type NEW PPP
+            elif soa.channel > 0 and soa.rsl_units == 0 and soa.ppp_units >0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                #logbook.units = rec.ppp_units
+                v_units = v_units + soa.ppp_units                                   #$$sign
+                print 'rec.channel > 0 and rec.rsl_units == 0 and rec.ppp_units >0=0>0:', v_units#rec.ppp_units
+            ## app type RSL
+            elif soa.rsl_units > 0 and soa.channel == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                #logbook.units = rec.rsl_units
+                v_units = v_units + soa.rsl_units                                   #$$sign
+                print 'rec.rsl_units > 0=0:', v_units#rec.rsl_units
+            ## ?
+            elif soa.channel > 0 and soa.rsl_units == 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                #logbook.units = rec.channel#rec.rsl_units
+                v_units = v_units + soa.channel                                     #$$sign
+                print 'rec.channel > 0=0:', v_units#rec.channel
+            ## either channel or rsl_units is present
+            elif soa.channel > 0 and soa.rsl_units > 0:# and rec.ppp_units == 0 and rec.stor_units == 0:
+                #logbook.units = rec.channel
+                v_units = v_units + soa.channel                                     #$$sign
+                print 'either channel or rsl_units is present > 0>0:', v_units #rec.channel
+                      
+            ## app type MOD : combination of RSL, PPP and STORAGE OK!
+            elif  check_if_mod > 0:
+                #logbook.units = rec.stor_units + rec.ppp_units
+                v_units = v_units + soa.stor_units + soa.ppp_units                  #$$sign
+                print 'elif check_if_mod:', v_units#logbook.units                       
+            ## self.noofstation
+            instance.units = v_units                                                 #$$sign
+            stn_first  = None                                                       #$$sign
+            stn_last   = None                                                       #$$sign
+            v_stations = 0
+            try:
+                station_list = SOA_detail.objects.filter(soa=soa.id)        
+                #no_stations = station_list.count()
+                v_stations = v_stations = station_list.count()                      #$$sign
+                #print 'station_list.first(sitename) : ',  station_list.first()
+                #print 'station_list.last(sitename) : ',  station_list.last()
+                # First Pass
+                if stn_first:                                                       #$$sign
+                    stn_last = station_list.last()                                  
+                    instance.last_stn = stn_last.sitename[:29]                       
+                else:                                                               #$$sign
+                    stn_first = station_list.first()                
+                    #print 'stn_first.sitename :', stn_first.sitename[:29]
+                    instance.first_stn =  stn_first.sitename[:29]
+                    stn_last = station_list.last()                                  
+                    instance.last_stn = stn_last.sitename[:29]               
+                
+                #if no_stations:
+                if v_stations:                                                      #$$sign
+                    #logbook.noofstation =no_stations
+                    instance.noofstation =v_stations                                 #$$sign
+                else:
+                    instance.noofstation = 0
+            except:
+                # return default value
+                instance.first_stn =  ''
+                instance.last_stn = ''
+                instance.noofstation = 0
+            print 'first station: ', stn_first
+            print 'second station: ', stn_last
+            print 'no of station: ', v_stations
+            print 'no of units:', v_units
 #ok!
 # temporary disable while uploading previous SOA
 @receiver(pre_save, sender=SOA)
 def SOA_controlNo(sender, instance, **kwargs):    
-    d = instance.no_years * 365
-    instance.validity_to = instance.validity_from+timedelta(days=int(d))
+    days = Decimal(str(float(365.2425)))
+    d = instance.no_years * days    
+    instance.validity_to = instance.validity_from+timedelta(days=round(d,0))
 
     c = SOA.soa_objects.count()
     if not instance.pk:    
@@ -2691,5 +2814,9 @@ def LogBook_audit_duedate(sender, instance, **kwargs):
         else:
             print 'The task completed NOT on time'
             instance.is_ontime = False
-    
+
+#@receiver (post_save, sender=Statements)
+#def Payments(sender, instance, **kwargs): 
+    # update First and Last Station, No. of Units, No. of Stations
+#    print 'Entered Post Save Payments.'
 

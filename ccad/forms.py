@@ -26,7 +26,7 @@ from django.conf import settings
 
 #class EquipmentForm(forms.ModelForm):   
 class EquipmentForm(autocomplete_light.ModelForm):  
-    callsign       = forms.CharField(label='Call-Sign', widget=forms.TextInput(attrs={'style':'width:450px; padding:0px;',}))
+    callsign       = forms.CharField(required=False, label='Call-Sign', widget=forms.TextInput(attrs={'style':'width:450px; padding:0px;',}))
     #status         = forms.ChoiceField(label='Status', widget=forms.TextInput(attrs={'style':'width:70px; padding:0px; ',}))
     makemodel      = forms.ModelChoiceField(queryset=EquipModel.objects.all(), label="Make / Model", widget=autocomplete_light.ChoiceWidget('EquipModelAutocomplete', attrs={'style':'width:280px;',}))    
     serialno       = forms.CharField(label='Serial No.', widget=forms.TextInput(attrs={'style':'width:280px; padding:0px;',}))
@@ -474,16 +474,16 @@ class PPPImportForm(ImportExcelForm):
                 """ Equipment table is ready to accept new record """
                 try:
                     new_eq = Equipment.objects.create(carrier=carrier_instance, **rec_fields)                
-                    #print 'insert success'
+                    print 'Insert success for SN: ', rec_fields['serialno']
                     # create record in EquipRack
                     EquipRack.objects.create(logbook=log_instance, equipment=new_eq)
                     #print 'EquipRack created'
                     messages.success(request, 'Successfully inserted record(s).')
                 except:                
                     messages.error(request, 'Fail to insert record.')
-                    #print 'insert not success'
+                    print 'Insert fail for SN: ', rec_fields['serialno']
             else:
-                #print 'Duplicate Equipment found.'
+                print 'Duplicate Equipment found.'
                 if rec_fields['status'] == 'RECALL' or rec_fields['status'] == 'STO':
                     for x in check_dup:
                         x.status=rec_fields['status']
@@ -761,13 +761,13 @@ class RSLImportForm(ImportExcelForm):
             #print 'final output: ', rec_fields['old_make_1']
             try:
                 LatestRsl.objects.create(logbook=log_instance, **rec_fields)
+                print 'Insert successful for RSL No. ', rec_fields['rslno']
                 # empty dict
-                rec_fields.clear()
-                print 'insert success'
+                rec_fields.clear()                
                 messages.success(request, 'Successfully inserted record(s).')
             except:                
                 messages.error(request, 'Fail to insert record.')
-                print 'insert not success'
+                print 'Insert fail for RSL No. ', rec_fields['rslno']
         ## end 01/13/2014
 ### end import excel for rsl
 #ok!

@@ -1039,8 +1039,8 @@ def kpi_data(request):
                                           CASE \
                                             WHEN appt.trans_type LIKE 'PPP' \
                                             THEN sappt.ppp_units \
-                                            WHEN (sappt.const_fee > 0) and (appt.trans_type LIKE 'CP' or appt.trans_type LIKE 'NEW' or appt.trans_type LIKE 'MOD' or appt.trans_type LIKE 'TP') \
-                                            THEN (sappt.const_fee/360) \
+                                            WHEN appt.trans_type LIKE 'CP' \
+                                            THEN round((sappt.const_fee/360),0) \
                                             WHEN appt.trans_type LIKE 'MOD' \
                                             THEN sappt.mod_units \
                                             WHEN appt.trans_type LIKE 'RECALL' \
@@ -1126,18 +1126,18 @@ def kpi_data(request):
                                 if current_type == prev_type:
                                     if i == 'REN' or i == 'NEW':
                                         export_data['RSL_ontime']=export_data['RSL_ontime']+items+prev_count
-                                        print 'export_data[RSL_ontime] : %s where prov_count is: %s - %s user' %(items+prev_count, prev_count, show_user)
+                                        #print 'export_data[RSL_ontime] : %s where prov_count is: %s - %s user' %(items+prev_count, prev_count, show_user)
                                     else:
                                         export_data[i+'_ontime']=items+prev_count
-                                        print 'export_data[%s_ontime] : %s where prov_count is: %s - %s user' %(i,items+prev_count, prev_count, show_user)
+                                        #print 'export_data[%s_ontime] : %s where prov_count is: %s - %s user' %(i,items+prev_count, prev_count, show_user)
                                 # if prev_type is empty:
                                 else:
                                     if i == 'REN' or i == 'NEW':
                                         export_data['RSL_ontime']=export_data['RSL_ontime']+items
-                                        print 'export_data[RSL_ontime] : %s - %s user' %(items, show_user)
+                                        #print 'export_data[RSL_ontime] : %s - %s user' %(items, show_user)
                                     else:
                                         export_data[i+'_ontime']=items
-                                        print 'export_data[%s_ontime] : %s - %s user' %(i, items, show_user)
+                                        #print 'export_data[%s_ontime] : %s - %s user' %(i, items, show_user)
                                 prev_type = i
                                 prev_count = items         
                             # reset
@@ -1153,13 +1153,13 @@ def kpi_data(request):
                 export_data[rec.trans_type]=rec.units            
             if rec.trans_type == 'NEW' or rec.trans_type == 'REN':
                 export_data['RSL'] = export_data['RSL'] + rec.units
-            print 'rec.trans_type : %s with %s units' % (rec.trans_type, rec.units)
+            #print 'rec.trans_type : %s with %s units' % (rec.trans_type, rec.units)
         # computing for include trans_type items completed beyond due date
         for i in include_only2:
             #print 'export_data[%s]' %(export_data[i])
             #print 'export_data[on_time]: ', export_data[i+'_ontime']
             if export_data[i] ==None:
-                print 'export_data[%s]' % (i)
+                #print 'export_data[%s]' % (i)
                 export_data[i] = 0 
             export_data[i+'_due']= export_data[i] - export_data[i+'_ontime'] 
             #print 'export_data[%s]' %(i+'_due')  

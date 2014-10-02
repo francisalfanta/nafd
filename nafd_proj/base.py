@@ -1,11 +1,12 @@
+INSTALLED_APPS = (
+    # common apps...
+)
+
 # Django settings for mysite project.
 import os
 
-SITE_ROOT   = os.path.dirname(os.path.realpath(__file__))
-
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 ALLOWED_HOSTS = ['localhost',]
+SITE_ROOT   = os.path.dirname(os.path.realpath(__file__))
 
 ADMINS = (
     ('Francis T. M. Alfanta', 'francisalfanta@gmail.com'),
@@ -152,19 +153,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    # Uncomment the next line to enable the admin:
-    'grappelli',
     'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
-    'ccad',
-    'import_excel',
-    'ajaxuploader',
-    'django_cleanup',
-    'autocomplete_light', 
-    'rest_framework',
-    #'genericm2m',
-    #'psycopg2',
 )
 
 # A sample logging configuration. The only tangible logging

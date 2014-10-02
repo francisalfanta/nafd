@@ -82,8 +82,7 @@
                             <div class="file-name">FAS-FAN: {% firstof task.fas_data.ReferenceNo|upper 'not available' %}</div>                        
                     {% endif %}             
                     {% endif %}
-                    {% if task.status == 'ENDORSEMENT' and task.current_user|upper == user|upper %}
-                    {{ task.id }} status here
+                    {% if task.status == 'ENDORSEMENT' and task.current_user|upper == user|upper %}                  
                     <div><a class="undo-link" href="/logs/engr/undo/{{ task.id }}" style="font-size:14; font-weight:bold">Recall Endorsement</a></div>
                     {% endif %}
                     <span id="engr_action-here-{{ forloop.counter|cei:logs.number }}" class="engr_action">
